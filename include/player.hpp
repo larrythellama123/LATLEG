@@ -32,9 +32,9 @@ public:
     // Default constructor zeroes out the array automatically
     Player() = default;
 
-    void static processInput(GLFWwindow* window) {
-        int prev_x = x;
-        int prev_y = y;
+    void processInput(GLFWwindow* window) {
+        prev_x = x;
+        prev_y = y;
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) y += 1; // Move Up
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) y -= 1; // Move Down
@@ -42,14 +42,18 @@ public:
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) x += 1; // Move Right
     }
 
-    PlayerPacket static formPacket(){
-        PlayerPacket PP;
+    PlayerPacketInput formPacket(){
+        PlayerPacketInput PP;
         PP.prev_x = prev_x;
         PP.prev_y = prev_y;
         PP.x = x;
         PP.y = y;
         PP.character = character;
-        return formPacket;
+        return PP;
+    }
+
+    void render(const PlayerPacketOutput& PP){
+        
     }
 
 
@@ -65,4 +69,5 @@ private:
     int prev_x = 0;
     int prev_y= 0;
     char  character = 'h';
+    std::vector<char>full_map;
 };

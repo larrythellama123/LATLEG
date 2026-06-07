@@ -13,6 +13,7 @@
 #define MAXLINE  1024
 
 int main() {
+    std::unique_ptr<Player> player = std::make_unique<Player>(); 
     int sockfd;
     char buffer[MAXLINE];
     const char *hello = "Hello from client";
@@ -33,19 +34,6 @@ int main() {
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server IP
 
     socklen_t len = sizeof(servaddr);
-
-    //collect info from player
-
-    // Send message to server to init player
-    sendto(sockfd, hello, strlen(hello), MSG_CONFIRM,
-           (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    printf("Hello message sent.\n");
-
-    // Receive reply from server about player init location 
-    int n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL,
-                     (struct sockaddr *)&servaddr, &len);
-
-    //init a map with character sprite  
     PlayerPacketOutput received_packet;
     while(1){
         //changes to the player location then send to server
@@ -62,7 +50,7 @@ int main() {
         );
 
         if(sizeof(PlayerPacketOutput) ==  sizeof(n)){
-            processOutput(received_packet);
+            render(received_packet);
         }
         else{
             std::err<<"there was an error";

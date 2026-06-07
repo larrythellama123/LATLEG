@@ -40,13 +40,16 @@ namespace std {
 
 
 class Map{
-    Map():full_map(302*302){
+    Map(){
         std::ifstream file("text_map.txt", std::ios::binary);
         if(!file){
             std::cerr<<"file not found";
         }
-        file >> std::noskipws; 
-        full_map.assign(std::istream_iterator<char>(file), std::istream_iterator<char>());
+        full_map.reserve(300*300);
+        std::string line;
+        while (std::getline(file, line)) {
+            full_map.insert(full_map.end(), line.begin(), line.end());
+        }
         for(int i =0 ; i < 300; i += 10){
             for(int j =0 ; j < 300; j += 10){
                 std::pair<int, int> p = {i/10, j/10};
