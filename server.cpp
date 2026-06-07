@@ -7,15 +7,18 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <netinet/in.h> 
-  
+#include "player.hpp"
+#include "map.hpp"
+#include <memory>
+
 #define PORT     8080 
 #define MAXLINE 1024 
   
 // Driver code 
 int main() { 
-    int sockfd; 
+    std::unique_ptr<Map> map = std::make_unique<Map>();
+    int sockfd;     
     char buffer[MAXLINE]; 
-    const char *hello = "Hello from server"; 
     struct sockaddr_in servaddr, cliaddr; 
       
     // Creating socket file descriptor 
@@ -41,19 +44,28 @@ int main() {
     } 
       
     socklen_t len;
-    int n; 
-  
-    len = sizeof(cliaddr);  //len is value/result 
-  
-    n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
-                MSG_WAITALL, ( struct sockaddr *) &cliaddr, 
-                &len); 
-    buffer[n] = '\0'; 
-    printf("Client : %s\n", buffer); 
-    sendto(sockfd, (const char *)hello, strlen(hello),  
-        MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
-            len); 
-    std::cout<<"Hello message sent."<<std::endl;  
+    len = sizeof(cliaddr);  
+    PlayerPacketInput received_packet;
+    while(1){
+        //changes to the player location then send to server
+        ssize_t bytes_received = recvfrom(
+            sockfd, 
+            &received_packet,         
+            sizeof(received_packet), 
+            0, 
+            (struct sockaddr*)&cliaddr, 
+            &len
+        );
+
+        if(sizeof(PlayerPacketInput) ==  sizeof(bytes_received)){
+            PlayerPacketOutput payload = map->sendUpdate(received_packet);
+            sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+        }
+        else{
+            std::err<<"there was an error";
+        }
+        
+    }
       
     return 0; 
 }

@@ -6,22 +6,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-
-enum class PlayerState {
-    Alive,    // Defaults to 0
-    Dead, // Defaults to 1
-};
-
-
-struct PlayerPacket {
-    uint8_t player_id;
-    std::vector<int> enemy_positions;
-    uint8_t x;
-    uint8_t y;
-    uint8_t 
-    PlayerState PS;
-};
-
+#include "player.hpp"
 
 
 #define PORT     8080
@@ -61,15 +46,14 @@ int main() {
                      (struct sockaddr *)&servaddr, &len);
 
     //init a map with character sprite  
-    PlayerPacket received_packet;
+    PlayerPacketOutput received_packet;
     while(1){
         //changes to the player location then send to server
-        processInput();
-        std::array<uint8_t,3> payload = get_player_coords();
+        Player.processInput();
+        PlayerPacket payload= Player.formPacket();
         sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-        int n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *)&servaddr, &len);
         ssize_t bytes_received = recvfrom(
-            server_fd, 
+            sockfd, 
             &received_packet,         // Pointer to your struct
             sizeof(received_packet),  // Expected size in bytes
             0, 
@@ -77,7 +61,7 @@ int main() {
             &addr_len
         );
 
-        if(sizeof(PlayerPacket) ==  sizeof(n)){
+        if(sizeof(PlayerPacketOutput) ==  sizeof(n)){
             processOutput(received_packet);
         }
         else{

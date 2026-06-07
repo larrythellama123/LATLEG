@@ -11,6 +11,7 @@
 #include <iterator>
 #include <iomanip>
 #include <functional> 
+#include "player.hpp"
 
 struct EnemyInfo {
     int x;
@@ -36,16 +37,7 @@ namespace std {
     };
 }
 
-struct PlayerPacket {
-    uint8_t player_id;
-    std::vector<std::pair<std::pair<int,int>, char>> enemy_positions;
-    uint8_t x;
-    uint8_t y;
-    uint8_t prev_x;
-    uint8_t prev_y;
-    char character;
-    PlayerState PS;
-};
+
 
 class Map{
     Map():full_map(302*302){
@@ -63,7 +55,7 @@ class Map{
         }     
     }
 
-    void updatePositionAndBucket(const PlayerPacket& PP_input){
+    void updatePositionAndBucket(const PlayerPacketInput& PP_input){
         full_map[PP_input.y * 300 + PP_input.x] = PP_input.character;
         std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
         std::pair<int,int> p2 = {PP_input.prev_x/10,PP_input.prev_y/10};
@@ -73,10 +65,9 @@ class Map{
             tmp = {PP_input.x,PP_input.y,PP_input.character};
             bucket_map[p2].insert(tmp);
         }
-
     }
     
-    std::vector<EnemyInfo> checkEnemy( PlayerPacket& PP_output, const PlayerPacket& PP_input){
+    std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input){
         std::pair<int,int> p = {PP_input.x/10,PP_input.y/10};
         std::vector<EnemyInfo> enemy_positions;
         for(std::vector<int> dir : directions){
@@ -87,14 +78,35 @@ class Map{
         }
         return enemy_positions;
     }   
+
+    bool checkLegal(const PlayerPacketInput& PP_input){
+        if(PP_input.x < 0 && PP_input.x > 300){
+            return false;    
+        }
+        if(PP_input.y < 0 && PP_input.y > 300){
+            return false;    
+        }
+        if(full_map[PP_input.y*300 + PP_input.x] == '*'){
+            return false;    
+        }
+        return true;
+    }
     
-    sendUpdate(const PlayerPacket& PP_input){
-        PlayerPacket PP_output;
-        if(!checkLegal()){
+    PlayerPacketOutput sendUpdate(const PlayerPackeInput& PP_input){
+        PlayerPacketOutput PP_output;
+        PP_output.x = PP_input.x;
+        PP_output.y = PP_input.y;
+        PP_output.prev_x = PP_input.prev_x;
+        PP_output.prev_y = PP_input.prev_y;
+        PP_output.character = PP_input.character;
+
+        if(!checkLegal(PP_input)){
+            PP_output.x = PP_output.prev_x;
+            PP_output.y = PP_output.prev_y; 
             return PP_output;
         }
-        checkEnemy(PP_output, PP_input);
-        updatePositionOnMap(PP_output);
+        PP_output.enemy_positions = checkEnemy(PP_input);
+        updatePositionAndBucket( PP_input);
         return PP_output;
     }
 
@@ -102,4 +114,4 @@ class Map{
         std::vector<std::vector<int>> directions = {{1,1},{-1,1},{1,-1},{-1,-1},{1,0},{-1,0},{0,1},{0,-1}};
         std::vector<char>full_map;
         std::unordered_map<std::pair<int,int>, std::unordered_set<EnemyInfo>> bucket_map;
-}
+};
