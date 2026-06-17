@@ -61,6 +61,18 @@ class template<typename T, size_t size> SPSCQueue{
             tail.store(next_tail, std::memory_order_release); 
             return true;
         };    
+
+        bool push(T &&item){
+            const std::size_t current_tail = tail.load(std::memory_order_relaxed);
+            std::size_t next_tail = (current_tail+1) & (size-1);
+
+            if(next_tail ==  head.load(std::memory_order_acquire)){
+                return false;
+            }
+            buffer[current_tail] = std::move(item);
+            tail.store(next_tail, std::memory_order_release); 
+            return true;
+        };    
         
         T pop(){
             const size_t current_head = head.load(std::memory_order_relaxed);
@@ -77,10 +89,17 @@ class template<typename T, size_t size> SPSCQueue{
         }
 
         bool empty(){
-            if(size > 0){
+            if(this->size() > 0){
                 return false;
             }
             return true;
+        }
+
+        bool full(){
+            if(this->size() == 0){
+                return true;
+            }
+            return false;
         }
 }
 
@@ -91,7 +110,16 @@ class template<size_t size>Worker{
     public:
         bool assign_task(const UDPTask &item){
             if(!queue->full()){
-                queue->push(item);
+                queue->push(std::move(item));
+                thread(worker_function(queue));
+                return true;
+            }
+            return false;
+        }
+
+        bool assign_task(const UDPTask &&item){
+            if(!queue->full()){
+                queue->push(std::move(item));
                 thread(worker_function(queue));
                 return true;
             }
@@ -154,12 +182,13 @@ int main() {
             (struct sockaddr*)&cliaddr, 
             &len
         );
-
-        char client_ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET,&(cliaddr.sin_addr), client_ip, INET_ADDRSTRLEN);
-        int client_port = ntohs(cliaddr.sin_port);
         if(sizeof(received_packet) ==  sizeof(bytes_received)){
-            UDPTask task = {received_packet, }
+            UDPTask task = {received_packet, cliaddr};
+            for(int i=0; i < THREAD_POOL_SIZE; i++){
+                if(workers[i].assign_task(std::move(task))){
+                    break;
+                }
+            }
         }
         else{
             std::err<<"there was an error";
