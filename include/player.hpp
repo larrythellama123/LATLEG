@@ -14,6 +14,11 @@ struct PlayerPacketInput {
     uint8_t x;
     uint8_t y;
     char character;
+
+    public:
+    PlayerPacketInput(PlayerPacketInput&& packet){
+        PlayerPacketInput new_packet = {packet.}
+    }
 };
 
 struct PlayerPacketOutput {
