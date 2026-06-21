@@ -23,24 +23,15 @@ constexpr int THREAD_POOL_SIZE = 4;
 struct UDPTask{
     PlayerPacketInput PP;
     sockaddr_in client_addr;
+    
+    public:
+        UDPTask (UDPTask&& task):PP(std::move(task.PP)),client_addr(std::move(task.client_addr)){};
+        UDPTask operator=(UDPTask&& task){
+            UDPTask new_task = {std::move(task.PP), std::move(task.client_addr)};
+            return new_task;
+        }
 };
 
-class TaskQueue{
-    private:
-        std::queue<UDPTask> task_queue;
-        std::mutex mtx;
-        std::condition_variable cv;
-        bool stop_requested  = false;
-
-    public:
-        void push(const UDPTask& task){
-            task_queue.push(task);
-        }
-
-        void pop(){
-            
-        }
-}
 
 class template<typename T, size_t size> SPSCQueue{
     private:
@@ -107,17 +98,29 @@ class template<size_t size>Worker{
     private:
         std::unique_ptr<SPSCQueue<UDPTask,size>> queue = std::make_unique<SPSCQueue<UDPTask,size>>();
         std::thread thread;
+        std::atomic<bool> running = false;
     public:
+        Worker() : worker_thread(&Worker::worker_function, this) {
+            running.store(true);
+        }
+
+        ~Worker(){
+            running.store(false);
+            if(thread.joinable()){
+                thread.join();
+            }
+        }
+
         bool assign_task(const UDPTask &item){
             if(!queue->full()){
-                queue->push(std::move(item));
+                queue->push(item);
                 thread(worker_function(queue));
                 return true;
             }
             return false;
         }
 
-        bool assign_task(const UDPTask &&item){
+        bool assign_task(UDPTask &&item){
             if(!queue->full()){
                 queue->push(std::move(item));
                 thread(worker_function(queue));
@@ -127,12 +130,16 @@ class template<size_t size>Worker{
         }
 
         void worker_function(std::unique_ptr<SPSCQueue<UDPTask,size>> queue){
-            UDPTask task = queue->pop();
-            if(task == nullptr){
-                return;
+            while(runnning){
+                if(queue.empty()){continue;}
+                UDPTask task = queue->pop();
+                if(task == nullptr){
+                    return;
+                }
+                PlayerPacketOutput payload = map->sendUpdate(task.PP);
+                sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
-            PlayerPacketOutput payload = map->sendUpdate(task.PP);
-            sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
+            
         }
 }
 

@@ -16,9 +16,16 @@ struct PlayerPacketInput {
     char character;
 
     public:
-    PlayerPacketInput(PlayerPacketInput&& packet){
-        PlayerPacketInput new_packet = {packet.}
-    }
+    PlayerPacketInput(PlayerPacketInput&& packet) noexcept
+        : prev_x(packet.prev_x),
+          prev_y(packet.prev_y),
+          x(packet.x),
+          y(packet.y),
+          character(packet.character) {}
+
+    PlayerPacketInput operator=(PlayerPacketInput&& packet) noexcept{
+        PlayerPacketInput new_packet ={packet.prev_x,packet.prev_y, packet.x, packet.y, packet.character};
+    }      
 };
 
 struct PlayerPacketOutput {
