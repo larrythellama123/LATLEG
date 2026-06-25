@@ -13,6 +13,7 @@
 #include <thread>
 #include <queue>
 #include <mutex>
+#include <chrono>
 #include <condition_variable>
 
 
@@ -100,7 +101,7 @@ class template<size_t size>Worker{
         std::thread thread;
         std::atomic<bool> running = false;
     public:
-        Worker() : worker_thread(&Worker::worker_function, this) {
+        Worker() : thread(&Worker::worker_function, this) {
             running.store(true);
         }
 
@@ -114,7 +115,6 @@ class template<size_t size>Worker{
         bool assign_task(const UDPTask &item){
             if(!queue->full()){
                 queue->push(item);
-                thread(worker_function(queue));
                 return true;
             }
             return false;
@@ -123,15 +123,16 @@ class template<size_t size>Worker{
         bool assign_task(UDPTask &&item){
             if(!queue->full()){
                 queue->push(std::move(item));
-                thread(worker_function(queue));
                 return true;
             }
-            return false;
+            return false;   
         }
 
-        void worker_function(std::unique_ptr<SPSCQueue<UDPTask,size>> queue){
-            while(runnning){
-                if(queue.empty()){continue;}
+        void worker_function(){
+            while(running){
+                if(queue.empty()){
+                    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                }
                 UDPTask task = queue->pop();
                 if(task == nullptr){
                     return;
@@ -180,6 +181,7 @@ int main() {
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;
+    int worker_idx = 0;
     while(1){
         ssize_t bytes_received = recvfrom(
             sockfd, 
@@ -196,6 +198,16 @@ int main() {
                     break;
                 }
             }
+
+            int num_attempts = 0;
+            bool task_assigned = false;
+            while(!workers[worker_idx].assign_task(task)){
+                if(num_attempts >= THREAD_POOL_SIZE)break;
+                worker_idx = (worker_idx + 1) % THREAD_POOL_SIZE;
+                task_assigned = true;
+                num_attempts++;
+            }
+            if(!task_assigned) std::cerr<<"packet is dropped"<<std::endl;
         }
         else{
             std::err<<"there was an error";

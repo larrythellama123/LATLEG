@@ -6,7 +6,7 @@ class SPMCQueue{
     struct Reader(){
         T* read(){
             auto& blk = q->blks[next_idx % size];
-            uint32_t new_idx = ((std::atomic<uint32_t>* blk.idx)->load(std::memory_order_acquire));
+            uint32_t new_idx = blk.idx.load(std::memory_order_acquire);
             if(int(new_idx - next_idx) < 0) return nullptr;
             next_idx = new_idx + 1;
             return &blk.data;
@@ -30,14 +30,14 @@ class SPMCQueue{
     write(Writer writer){
         auto& blk = blks[++write_idx % size];
         writer(blk.data); 
-        ((std::atomic<uint32_t>* blk.idx)->store(write_idx, std::memory_order_release));   
+        blk.idx.store(write_idx, std::memory_order_release);   
     }
 
     private:
     friend class Reader;
     struct alignas(64) Block
     {
-        uint32_t idx = 0;
+        std::atomic<uint32_t> idx = 0;
         T data;
     }blks[size];
 
