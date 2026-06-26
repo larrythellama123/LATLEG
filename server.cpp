@@ -24,17 +24,11 @@ constexpr int THREAD_POOL_SIZE = 4;
 struct UDPTask{
     PlayerPacketInput PP;
     sockaddr_in client_addr;
-    
-    public:
-        UDPTask (UDPTask&& task):PP(std::move(task.PP)),client_addr(std::move(task.client_addr)){};
-        UDPTask operator=(UDPTask&& task){
-            UDPTask new_task = {std::move(task.PP), std::move(task.client_addr)};
-            return new_task;
-        }
 };
 
 
-class template<typename T, size_t size> SPSCQueue{
+template<typename T, size_t size> 
+class SPSCQueue{
     private:
         static_assert((size & (size-1))==0,"size must be power of 2");
         alignas(64) std::atomic<std::size_t> head{0};
@@ -95,7 +89,8 @@ class template<typename T, size_t size> SPSCQueue{
         }
 }
 
-class template<size_t size>Worker{
+template<size_t size> 
+class Worker{
     private:
         std::unique_ptr<SPSCQueue<UDPTask,size>> queue = std::make_unique<SPSCQueue<UDPTask,size>>();
         std::thread thread;
@@ -120,13 +115,6 @@ class template<size_t size>Worker{
             return false;
         }
 
-        bool assign_task(UDPTask &&item){
-            if(!queue->full()){
-                queue->push(std::move(item));
-                return true;
-            }
-            return false;   
-        }
 
         void worker_function(){
             while(running){
@@ -149,7 +137,7 @@ class template<size_t size>Worker{
 
 // Driver code 
 int main() { 
-    std::vector<std::unique_ptr<Worker>> workers;
+    std::vector<std::unique_ptr<Worker<5>>> workers;
     for(int i = 0 ; i < THREAD_POOL_SIZE; i++){
         workers.push_back(make_unique<Worker<5>>());
     }
@@ -193,12 +181,6 @@ int main() {
         );
         if(sizeof(received_packet) ==  sizeof(bytes_received)){
             UDPTask task = {received_packet, cliaddr};
-            for(int i=0; i < THREAD_POOL_SIZE; i++){
-                if(workers[i].assign_task(std::move(task))){
-                    break;
-                }
-            }
-
             int num_attempts = 0;
             bool task_assigned = false;
             while(!workers[worker_idx].assign_task(task)){
@@ -207,6 +189,7 @@ int main() {
                 task_assigned = true;
                 num_attempts++;
             }
+            worker_idx = (worker_idx + 1) % THREAD_POOL_SIZE;
             if(!task_assigned) std::cerr<<"packet is dropped"<<std::endl;
         }
         else{
