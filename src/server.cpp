@@ -179,7 +179,7 @@ int main() {
             (struct sockaddr*)&cliaddr, 
             &len
         );
-        if(sizeof(received_packet) ==  sizeof(bytes_received)){
+        if(sizeof(received_packet) ==  bytes_received){
             UDPTask task = {received_packet, cliaddr};
             int num_attempts = 0;
             bool task_assigned = false;

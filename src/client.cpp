@@ -7,17 +7,27 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "player.hpp"
+#include <csignal>
+#include <atomic>
 
 
 #define PORT     8080
 #define MAXLINE  1024
+std::atomic<bool> keep_running{true};
+
+void signal_handler(int signum) {
+    if (signum == SIGINT) {
+        keep_running.store(false); 
+    }
+}
 
 int main() {
+    std::signal(SIGINT, signal_handler);
     std::unique_ptr<Player> player = std::make_unique<Player>(); 
     int sockfd;
     char buffer[MAXLINE];
     const char *hello = "Hello from client";
-    struct sockaddr_in servaddr;
+    struct sockaddr_in servaddr, cliaddr;
 
     // Create UDP socket
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -27,6 +37,8 @@ int main() {
     }
 
     memset(&servaddr, 0, sizeof(servaddr));
+    memset(&cliaddr, 0, sizeof(cliaddr));
+
 
     // Fill server address info
     servaddr.sin_family = AF_INET;              // IPv4
@@ -35,25 +47,25 @@ int main() {
 
     socklen_t len = sizeof(servaddr);
     PlayerPacketOutput received_packet;
-    while(1){
+    while(keep_running.load()){
         //changes to the player location then send to server
-        Player.processInput();
-        PlayerPacket payload= Player.formPacket();
+        player->processInput();
+        PlayerPacketInput payload= player->formPacket();
         sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
         ssize_t bytes_received = recvfrom(
             sockfd, 
             &received_packet,         // Pointer to your struct
             sizeof(received_packet),  // Expected size in bytes
             0, 
-            (struct sockaddr*)&client_addr, 
-            &addr_len
+            (struct sockaddr*)&cliaddr, 
+            &len
         );
 
-        if(sizeof(PlayerPacketOutput) ==  sizeof(n)){
+        if(bytes_received ==  sizeof(received_packet)){
             render(received_packet);
         }
         else{
-            std::err<<"there was an error";
+            std::cerr<<"there was an error";
         }
         
     }

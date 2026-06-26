@@ -1,12 +1,36 @@
 #include <array>
 #include <cstdint>
-#include <GLFW/glfw3.h>
 #include <iostream>
+#include <ncurses.h>
 
 enum class PlayerState {
     Alive,    
     Dead,
 };
+
+struct EnemyInfo {
+    int x;
+    int y;
+    char character;
+
+    bool operator==(const EnemyInfo& other) const {
+        return x == other.x && 
+               y == other.y && 
+               character == other.character;
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<EnemyInfo> {
+        std::size_t operator()(const EnemyInfo& e) const {
+            std::size_t h1 = std::hash<int>{}(e.x);
+            std::size_t h2 = std::hash<int>{}(e.y);
+            std::size_t h3 = std::hash<char>{}(e.character);
+            return h1 ^ (h2 << 1) ^ (h3 << 2);
+        }
+    };
+}
 
 struct PlayerPacketInput {
     uint8_t prev_x;
@@ -30,16 +54,47 @@ struct PlayerPacketOutput {
 class Player {
 public:
     // Default constructor zeroes out the array automatically
-    Player() = default;
+    Player(){
+        initscr();             
+        noecho();              
+        nodelay(stdscr, TRUE); 
+        cbreak();    
+    }
 
-    void processInput(GLFWwindow* window) {
+    ~Player(){
+        endwin(); 
+    }
+
+    void processInput() {
+        // Store the previous position
         prev_x = x;
         prev_y = y;
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) y += 1; // Move Up
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) y -= 1; // Move Down
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) x -= 1; // Move Left
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) x += 1; // Move Right
+        // Read a single character from the terminal input buffer
+        int ch = getch(); 
+
+        // Process the key press
+        switch (ch) {
+            case 'w':
+            case 'W':
+                y += 1; // Move Up
+                break;
+            case 's':
+            case 'S':
+                y -= 1; // Move Down
+                break;
+            case 'a':
+            case 'A':
+                x -= 1; // Move Left
+                break;
+            case 'd':
+            case 'D':
+                x += 1; // Move Right
+                break;
+            default:
+                // No movement or unhandled key
+                break;
+        }
     }
 
     PlayerPacketInput formPacket(){
@@ -50,17 +105,6 @@ public:
         PP.y = y;
         PP.character = character;
         return PP;
-    }
-
-    void render(const PlayerPacketOutput& PP){
-        
-    }
-
-
-
-
-    void set_player_coords(const std::array<uint8_t, 3>& arr) {
-        coords = arr; 
     }
 
 private:
