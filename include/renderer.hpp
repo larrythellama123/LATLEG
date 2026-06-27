@@ -5,7 +5,7 @@
 #include <iterator>
 
 class Renderer{
-    Renderer():{
+    Renderer(){
         std::ifstream file("text_map.txt", std::ios::binary);
         if(!file){
             std::cerr<<"file not found";
@@ -18,15 +18,13 @@ class Renderer{
         chunk.reserve(300*300);
         for(int i =0 ; i < 100; i ++){
             for(int j =0 ; j < 100; j++){
-                chunk[i*100+j] = full_map[i*300+j]
+                chunk[i*100+j] = full_map[i*300+j];
             }       
         }
         WINDOW* pad = newpad(300, 300);
         for (int i = 0; i < 300; i++)
             for (int j = 0; j < 300; j++)
                 mvwaddch(pad, i, j, full_map[i*300 + j]);
-
-        
     }
 
     void render(const PlayerPacketOutput& PP){

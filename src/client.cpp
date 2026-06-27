@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "player.hpp"
+#include "renderer.hpp"
 #include <csignal>
 #include <atomic>
 #include <fcntl.h>
