@@ -4,6 +4,7 @@
 
 #include <unordered_set>
 #include <unordered_map>
+#include <utility>
 #include <algorithm>
 #include <vector>
 #include <iostream>
@@ -12,9 +13,6 @@
 #include <iomanip>
 #include <functional> 
 #include "player.hpp"
-
-
-
 
 class Map{
     Map(){
@@ -72,7 +70,7 @@ class Map{
         return true;
     }
     
-    PlayerPacketOutput sendUpdate(const PlayerPackeInput& PP_input){
+    PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input){
         PlayerPacketOutput PP_output;
         PP_output.x = PP_input.x;
         PP_output.y = PP_input.y;

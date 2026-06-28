@@ -70,24 +70,24 @@ class SPSCQueue{
             return buffer[current_head];
         }
 
-        size_t size(){
-            return abs(tail.load(std::memory_order_acquire) - head.load(std::memory_order_acquire));
+        size_t count(){
+            return tail.load(std::memory_order_acquire) - head.load(std::memory_order_acquire);
         }
 
         bool empty(){
-            if(this->size() > 0){
+            if(count() > 0){
                 return false;
             }
             return true;
         }
 
         bool full(){
-            if(this->size() == 0){
+            if(count() == 0){
                 return true;
             }
             return false;
         }
-}
+};
 
 template<size_t size> 
 class Worker{
@@ -95,9 +95,11 @@ class Worker{
         std::unique_ptr<SPSCQueue<UDPTask,size>> queue = std::make_unique<SPSCQueue<UDPTask,size>>();
         std::thread thread;
         std::atomic<bool> running = false;
+        int sockfd;
     public:
-        Worker() : thread(&Worker::worker_function, this) {
+        Worker(int sock_fd_) : sockfd(sock_fd_){
             running.store(true);
+            thread(&Worker::worker_function, this);
         }
 
         ~Worker(){
@@ -117,34 +119,29 @@ class Worker{
 
 
         void worker_function(){
-            while(running){
+            while(running.load()){
                 if(queue.empty()){
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                    continue;
                 }
                 UDPTask task = queue->pop();
-                if(task == nullptr){
-                    return;
-                }
                 PlayerPacketOutput payload = map->sendUpdate(task.PP);
                 sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
             
         }
-}
+};
 
 
 
 
 // Driver code 
 int main() { 
-    std::vector<std::unique_ptr<Worker<5>>> workers;
-    for(int i = 0 ; i < THREAD_POOL_SIZE; i++){
-        workers.push_back(make_unique<Worker<5>>());
-    }
+    
     std::unique_ptr<Map> map = std::make_unique<Map>();
     int sockfd;     
     char buffer[MAXLINE]; 
-    struct sockaddr_in servaddr, cliaddr; 
+    struct sockaddr_in servaddr,cliaddr; 
       
     // Creating socket file descriptor 
     if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
@@ -164,7 +161,12 @@ int main() {
     { 
         perror("bind failed"); 
         exit(EXIT_FAILURE); 
-    } 
+    }
+
+    std::vector<std::unique_ptr<Worker<5>>> workers;
+    for(int i = 0 ; i<THREAD_POOL_SIZE; i++){
+        workers.push_back(std::make_unique<Worker<5>>(sockfd));
+    }
       
     socklen_t len;
     len = sizeof(cliaddr);  
@@ -193,7 +195,7 @@ int main() {
             if(!task_assigned) std::cerr<<"packet is dropped"<<std::endl;
         }
         else{
-            std::err<<"there was an error";
+            std::cerr<<"there was an error";
         }
         
     }

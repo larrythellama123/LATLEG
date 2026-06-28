@@ -11,6 +11,8 @@
 #include <csignal>
 #include <atomic>
 #include <fcntl.h>
+#include <memory>
+
 
 #define PORT     8080
 #define MAXLINE  1024
@@ -25,6 +27,8 @@ void signal_handler(int signum) {
     int main() {
         std::signal(SIGINT, signal_handler);
         std::unique_ptr<Player> player = std::make_unique<Player>(); 
+        std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>(); 
+
         int sockfd;
         char buffer[MAXLINE];
         const char *hello = "Hello from client";
@@ -64,7 +68,7 @@ void signal_handler(int signum) {
             );
 
             if(bytes_received ==  sizeof(received_packet)){
-                render(received_packet);
+                renderer->render(received_packet);
             }
             else if (bytes_received < 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
