@@ -121,7 +121,7 @@ class Worker{
         void worker_function(){
             while(running.load()){
                 if(queue.empty()){
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     continue;
                 }
                 UDPTask task = queue->pop();
@@ -134,8 +134,6 @@ class Worker{
 
 
 
-
-// Driver code 
 int main() { 
     
     std::unique_ptr<Map> map = std::make_unique<Map>();
@@ -163,15 +161,11 @@ int main() {
         exit(EXIT_FAILURE); 
     }
 
-    std::vector<std::unique_ptr<Worker<5>>> workers;
-    for(int i = 0 ; i<THREAD_POOL_SIZE; i++){
-        workers.push_back(std::make_unique<Worker<5>>(sockfd));
-    }
-      
+   
+    Worker<20> worker;
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;
-    int worker_idx = 0;
     while(1){
         ssize_t bytes_received = recvfrom(
             sockfd, 
@@ -183,19 +177,12 @@ int main() {
         );
         if(sizeof(received_packet) ==  bytes_received){
             UDPTask task = {received_packet, cliaddr};
-            int num_attempts = 0;
-            bool task_assigned = false;
-            while(!workers[worker_idx].assign_task(task)){
-                if(num_attempts >= THREAD_POOL_SIZE)break;
-                worker_idx = (worker_idx + 1) % THREAD_POOL_SIZE;
-                task_assigned = true;
-                num_attempts++;
-            }
-            worker_idx = (worker_idx + 1) % THREAD_POOL_SIZE;
-            if(!task_assigned) std::cerr<<"packet is dropped"<<std::endl;
+            if(!worker.assign_task(task)){
+                std::cerr<<"packet is dropped"<<std::endl;
+            };
         }
         else{
-            std::cerr<<"there was an error";
+            std::cerr<<"there was an unknown error";
         }
         
     }
