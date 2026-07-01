@@ -60,14 +60,15 @@ class SPSCQueue{
             return true;
         };    
         
-        T pop(){
+        bool pop(T& data){
             const size_t current_head = head.load(std::memory_order_relaxed);
             if(current_head == tail.load(std::memory_order_relaxed)){
                 return false;
             }
-            std::size_t next_head = (current_head+1) & (size-1);
+            size_t next_head = (current_head+1) & (size-1);
             head.store(next_head, std::memory_order_release); 
-            return buffer[current_head];
+            data = buffer[current_head];
+            return true;
         }
 
         size_t count(){
@@ -93,14 +94,12 @@ template<size_t size>
 class Worker{
     private:
         std::unique_ptr<SPSCQueue<UDPTask,size>> queue = std::make_unique<SPSCQueue<UDPTask,size>>();
+        std::unique_ptr<Map> map = std::make_unique<Map>();
         std::thread thread;
-        std::atomic<bool> running = false;
+        std::atomic<bool> running = true;
         int sockfd;
     public:
-        Worker(int sock_fd_) : sockfd(sock_fd_){
-            running.store(true);
-            thread(&Worker::worker_function, this);
-        }
+        Worker(int sock_fd_) : sockfd(sock_fd_),thread(&Worker<size>::worker_function, this){}
 
         ~Worker(){
             running.store(false);
@@ -119,12 +118,13 @@ class Worker{
 
 
         void worker_function(){
+            UDPTask task;
             while(running.load()){
-                if(queue.empty()){
+                if(queue->empty()){
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     continue;
                 }
-                UDPTask task = queue->pop();
+                queue->pop(task);
                 PlayerPacketOutput payload = map->sendUpdate(task.PP);
                 sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
@@ -135,8 +135,6 @@ class Worker{
 
 
 int main() { 
-    
-    std::unique_ptr<Map> map = std::make_unique<Map>();
     int sockfd;     
     char buffer[MAXLINE]; 
     struct sockaddr_in servaddr,cliaddr; 
@@ -162,7 +160,7 @@ int main() {
     }
 
    
-    Worker<20> worker;
+    Worker<16> worker(sockfd);
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;

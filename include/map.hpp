@@ -14,7 +14,10 @@
 #include <functional> 
 #include "player.hpp"
 
+
+
 class Map{
+    public:
     Map(){
         std::ifstream file("text_map.txt", std::ios::binary);
         if(!file){
@@ -91,5 +94,5 @@ class Map{
     private:
         std::vector<std::vector<int>> directions = {{1,1},{-1,1},{1,-1},{-1,-1},{1,0},{-1,0},{0,1},{0,-1}};
         std::vector<char>full_map;
-        std::unordered_map<std::pair<int,int>, std::unordered_set<EnemyInfo>> bucket_map;
+        std::unordered_map<std::pair<int,int>, std::unordered_set<EnemyInfo>,PairHash> bucket_map;
 };

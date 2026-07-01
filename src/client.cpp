@@ -1,6 +1,7 @@
 // Client side implementation of UDP client-server model
 
 #include <bits/stdc++.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -10,7 +11,6 @@
 #include "renderer.hpp"
 #include <csignal>
 #include <atomic>
-#include <fcntl.h>
 #include <memory>
 
 

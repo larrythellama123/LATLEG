@@ -21,6 +21,16 @@ struct EnemyInfo {
     }
 };
 
+struct PairHash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1, T2>& p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+        // Combine the two hashes using a bitwise XOR and a shift to avoid collisions
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
 namespace std {
     template <>
     struct hash<EnemyInfo> {
