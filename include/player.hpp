@@ -4,7 +4,7 @@
 #include <iostream>
 #include <ncurses.h>
 
-enum class PlayerState {
+enum class PlayerState:uint8_t {
     Alive,    
     Dead,
 };
@@ -49,9 +49,31 @@ struct PlayerPacketInput {
     uint8_t x;
     uint8_t y;
     char character;
+    std::vector<uint8_t> serialize() const {
+        std::vector<uint8_t> buffer;
+        buffer.push_back(x);
+        buffer.push_back(y);
+        buffer.push_back(prev_x);
+        buffer.push_back(prev_y);
+        buffer.push_back(static_cast<uint8_t>(character));
+        return buffer;
+    }
+
+    static PlayerPacketInput deserialize(const std::vector<uint8_t>& buffer){
+        PlayerPacketInput PP;
+        size_t offset = 0;
+
+        PP.x = buffer[offset++];
+        PP.y = buffer[offset++];
+        PP.prev_x = buffer[offset++];
+        PP.prev_y = buffer[offset++];
+        PP.character = static_cast<char>(buffer[offset++]);
+        return PP;
+    }
 };
 
 struct PlayerPacketOutput {
+public:
     uint8_t player_id;
     std::vector<EnemyInfo> enemy_positions;
     uint8_t x;
@@ -60,6 +82,46 @@ struct PlayerPacketOutput {
     uint8_t prev_y;
     char character;
     PlayerState PS;
+
+    static std::vector<uint8_t> serialize() const {
+        std::vector<uint8_t> buffer;
+        buffer.push_back(player_id);
+        buffer.push_back(x);
+        buffer.push_back(y);
+        buffer.push_back(prev_x);
+        buffer.push_back(prev_y);
+        buffer.push_back(static_cast<uint8_t>(character));
+        buffer.push_back(static_cast<uint8_t>(PS));
+        uint8_t enemy_count = static_cast<uint8_t>(enemy_positions.size());
+        buffer.push_back(enemy_count);
+        for (const auto& enemy : enemy_positions) {
+            buffer.push_back(static_cast<uint8_t>(enemy.character));
+            buffer.push_back(enemy.x);
+            buffer.push_back(enemy.y);
+        }
+        return buffer;
+    }
+
+    PlayerPacketOutput deserialize(const std::vector<uint8_t>& buffer){
+        PlayerPacketOutput PP;
+        size_t offset = 0;
+        PP.player_id = buffer[offset++];
+        PP.x = buffer[offset++];
+        PP.y = buffer[offset++];
+        PP.prev_x = buffer[offset++];
+        PP.prev_y = buffer[offset++];
+        PP.character = static_cast<char>(buffer[offset++]);
+        PP.PS = static_cast<PlayerState>(buffer[offset++]);
+        uint8_t enemy_count = buffer[offset++];
+        for (int i = 0; i < enemy_count; ++i) {
+            EnemyInfo enemy;
+            enemy.character = static_cast<char>(buffer[offset++]);
+            enemy.x  = buffer[offset++];
+            enemy.y  = buffer[offset++];
+            PP.enemy_positions.push_back(enemy);
+        }
+        return PP;
+    }
 };
 
 class Player {
@@ -88,11 +150,11 @@ public:
         switch (ch) {
             case 'w':
             case 'W':
-                y += 1; // Move Up
+                y -= 1; // Move Up
                 break;
             case 's':
             case 'S':
-                y -= 1; // Move Down
+                y += 1; // Move Down
                 break;
             case 'a':
             case 'A':
@@ -119,10 +181,9 @@ public:
     }
 
 private:
-    int x=0;
-    int y=0;
+    int x=2;
+    int y=2;
     int prev_x = 0;
-    int prev_y= 0;
+    int prev_y= 1;
     char  character = 'h';
-    std::vector<char>full_map;
 };

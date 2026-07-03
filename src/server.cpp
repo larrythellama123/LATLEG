@@ -36,6 +36,10 @@ class SPSCQueue{
         alignas(64) std::vector<T> buffer;
     
     public:
+        SPSCQueue(){
+            buffer.resize(size);
+        }
+
         bool push(const T &item){
             const std::size_t current_tail = tail.load(std::memory_order_relaxed);
             std::size_t next_tail = (current_tail+1) & (size-1);
@@ -71,23 +75,23 @@ class SPSCQueue{
             return true;
         }
 
-        size_t count(){
-            return tail.load(std::memory_order_acquire) - head.load(std::memory_order_acquire);
-        }
-
-        bool empty(){
-            if(count() > 0){
-                return false;
-            }
-            return true;
-        }
-
         bool full(){
-            if(count() == 0){
+            const std::size_t current_tail = tail.load(std::memory_order_relaxed);
+            std::size_t next_tail = (current_tail+1) & (size-1);
+
+            if(next_tail ==  head.load(std::memory_order_acquire)){
                 return true;
             }
             return false;
         }
+
+        bool empty(){
+            if(tail.load(std::memory_order_acquire) ==  head.load(std::memory_order_acquire)){
+                return true;
+            }
+            return false;
+        }
+
 };
 
 template<size_t size> 
@@ -125,8 +129,9 @@ class Worker{
                     continue;
                 }
                 queue->pop(task);
-                PlayerPacketOutput payload = map->sendUpdate(task.PP);
-                sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
+                PlayerPacketOutput PPO = map->sendUpdate(task.PP);
+                std::vector<uint8_t> payload = PPO.serialize();
+                sendto(sockfd, reinterpret_cast<const char *> (&payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
             
         }
@@ -155,7 +160,7 @@ int main() {
     if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
             sizeof(servaddr)) < 0 ) 
     { 
-        perror("bind failed"); 
+        perror("bind failed hey"); 
         exit(EXIT_FAILURE); 
     }
 
@@ -164,19 +169,26 @@ int main() {
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;
+    std::vector<uint8_t> buffer(65535); 
+
     while(1){
         ssize_t bytes_received = recvfrom(
             sockfd, 
-            &received_packet,         
-            sizeof(received_packet), 
+            &buffer,         
+            sizeof(buffer), 
             0, 
             (struct sockaddr*)&cliaddr, 
             &len
         );
-        if(sizeof(received_packet) ==  bytes_received){
+        if(buffer.size() ==  bytes_received){
+            received_packet = PlayerPacketInput.deserialize(buffer);
             UDPTask task = {received_packet, cliaddr};
+            std::cout<<"x and y from client raw"<<received_packet.x<<" "<<received_packet.y<<std::endl;
             if(!worker.assign_task(task)){
-                std::cerr<<"packet is dropped"<<std::endl;
+                std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+            }
+            else{
+                std::cout<<"packet queued"<<std::endl;
             };
         }
         else{

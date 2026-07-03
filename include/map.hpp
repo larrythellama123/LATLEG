@@ -69,7 +69,7 @@ class Map{
         }
         if(full_map[PP_input.y*300 + PP_input.x] == '*'){
             return false;    
-        }
+        } 
         return true;
     }
     
@@ -83,11 +83,13 @@ class Map{
 
         if(!checkLegal(PP_input)){
             PP_output.x = PP_output.prev_x;
-            PP_output.y = PP_output.prev_y; 
+            PP_output.y = PP_output.prev_y;
+
             return PP_output;
         }
         PP_output.enemy_positions = checkEnemy(PP_input);
         updatePositionAndBucket( PP_input);
+        std::cout<<"x and y in MAP"<<PP_output.x<<" "<<PP_output.y<<std::endl;
         return PP_output;
     }
 

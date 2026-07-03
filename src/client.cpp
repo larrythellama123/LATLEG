@@ -25,9 +25,25 @@ void signal_handler(int signum) {
 }
 
     int main() {
+        // initscr();             
+        // noecho();              
+        // nodelay(stdscr, TRUE); 
+        // cbreak();  
+        
+        initscr();
+        cbreak();
+        noecho();
+        keypad(stdscr, TRUE);
+        nodelay(stdscr, TRUE);
         std::signal(SIGINT, signal_handler);
         std::unique_ptr<Player> player = std::make_unique<Player>(); 
-        std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>(); 
+        std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>();
+        
+        //test
+        // PlayerPacketOutput PP;
+        // while(keep_running.load()){
+        //     renderer->render(PP);
+        // }
 
         int sockfd;
         char buffer[MAXLINE];
@@ -53,21 +69,24 @@ void signal_handler(int signum) {
 
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
+        
+        std::vector<uint8_t> buffer(65535); 
         while(keep_running.load()){
             //changes to the player location then send to server
             player->processInput();
-            PlayerPacketInput payload= player->formPacket();
-            sendto(sockfd, reinterpret_cast<const char *> (&payload), sizeof(payload), MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+            PlayerPacketInput PPI = player->formPacket();
+            std::vector<uint8_t> payload = PPI.serialize();
+            sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
             ssize_t bytes_received = recvfrom(
                 sockfd, 
-                &received_packet,         
-                sizeof(received_packet),  
+                reinterpret_cast<char*>(buffer.data()),      
+                buffer.size(), 
                 0, 
                 (struct sockaddr*)&cliaddr, 
                 &len
             );
-
-            if(bytes_received ==  sizeof(received_packet)){
+            if(bytes_received == buffer.size()){
+                received_packet = PlayerPacketOutput.deserialize(buffer);
                 renderer->render(received_packet);
             }
             else if (bytes_received < 0) {
@@ -82,11 +101,7 @@ void signal_handler(int signum) {
             }
             
         }
-
-    
-
-        // Close socket
         close(sockfd);
-
+        endwin(); 
         return 0;
     }
