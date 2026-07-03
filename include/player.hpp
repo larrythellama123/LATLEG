@@ -10,8 +10,8 @@ enum class PlayerState:uint8_t {
 };
 
 struct EnemyInfo {
-    int x;
-    int y;
+    uint8_t x;
+    uint8_t y;
     char character;
 
     bool operator==(const EnemyInfo& other) const {
@@ -83,7 +83,7 @@ public:
     char character;
     PlayerState PS;
 
-    static std::vector<uint8_t> serialize() const {
+    std::vector<uint8_t> serialize(){
         std::vector<uint8_t> buffer;
         buffer.push_back(player_id);
         buffer.push_back(x);
@@ -102,7 +102,7 @@ public:
         return buffer;
     }
 
-    PlayerPacketOutput deserialize(const std::vector<uint8_t>& buffer){
+    static PlayerPacketOutput deserialize(const std::vector<uint8_t>& buffer){
         PlayerPacketOutput PP;
         size_t offset = 0;
         PP.player_id = buffer[offset++];
@@ -113,7 +113,7 @@ public:
         PP.character = static_cast<char>(buffer[offset++]);
         PP.PS = static_cast<PlayerState>(buffer[offset++]);
         uint8_t enemy_count = buffer[offset++];
-        for (int i = 0; i < enemy_count; ++i) {
+        for (uint8_t i = 0; i < enemy_count; ++i) {
             EnemyInfo enemy;
             enemy.character = static_cast<char>(buffer[offset++]);
             enemy.x  = buffer[offset++];
@@ -181,9 +181,9 @@ public:
     }
 
 private:
-    int x=2;
-    int y=2;
-    int prev_x = 0;
-    int prev_y= 1;
+    uint8_t x=2;
+    uint8_t y=2;
+    uint8_t prev_x = 0;
+    uint8_t prev_y= 1;
     char  character = 'h';
 };

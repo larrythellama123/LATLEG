@@ -69,30 +69,29 @@ void signal_handler(int signum) {
 
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
-        
-        std::vector<uint8_t> buffer(65535); 
+
+        std::vector<uint8_t> buffer_(65535); 
         while(keep_running.load()){
             //changes to the player location then send to server
             player->processInput();
             PlayerPacketInput PPI = player->formPacket();
+
             std::vector<uint8_t> payload = PPI.serialize();
             sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
             ssize_t bytes_received = recvfrom(
                 sockfd, 
-                reinterpret_cast<char*>(buffer.data()),      
-                buffer.size(), 
+                reinterpret_cast<char*>(buffer_.data()),      
+                buffer_.size(), 
                 0, 
                 (struct sockaddr*)&cliaddr, 
                 &len
             );
-            if(bytes_received == buffer.size()){
-                received_packet = PlayerPacketOutput.deserialize(buffer);
+            if(bytes_received > 0){
+                received_packet = PlayerPacketOutput::deserialize(buffer_);
                 renderer->render(received_packet);
             }
             else if (bytes_received < 0) {
-                if (errno == EWOULDBLOCK || errno == EAGAIN) {
-
-                } else {
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {} else {
                     std::cerr << "Actual socket read error occurred\n";
                 }
             }

@@ -89,7 +89,6 @@ class Map{
         }
         PP_output.enemy_positions = checkEnemy(PP_input);
         updatePositionAndBucket( PP_input);
-        std::cout<<"x and y in MAP"<<PP_output.x<<" "<<PP_output.y<<std::endl;
         return PP_output;
     }
 

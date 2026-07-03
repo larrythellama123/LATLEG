@@ -115,7 +115,7 @@ class Worker{
         bool assign_task(const UDPTask &item){
             if(!queue->full()){
                 queue->push(item);
-                return true;
+                return true;    
             }
             return false;
         }
@@ -131,7 +131,7 @@ class Worker{
                 queue->pop(task);
                 PlayerPacketOutput PPO = map->sendUpdate(task.PP);
                 std::vector<uint8_t> payload = PPO.serialize();
-                sendto(sockfd, reinterpret_cast<const char *> (&payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
+                sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
             
         }
@@ -169,21 +169,23 @@ int main() {
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;
-    std::vector<uint8_t> buffer(65535); 
+    std::vector<uint8_t> buffer_(65535); 
 
     while(1){
         ssize_t bytes_received = recvfrom(
             sockfd, 
-            &buffer,         
-            sizeof(buffer), 
+            reinterpret_cast<char*>(buffer_.data()),         
+            buffer_.size(), 
             0, 
             (struct sockaddr*)&cliaddr, 
             &len
         );
-        if(buffer.size() ==  bytes_received){
-            received_packet = PlayerPacketInput.deserialize(buffer);
+        if(bytes_received > 0){
+            received_packet = PlayerPacketInput::deserialize(buffer_);
             UDPTask task = {received_packet, cliaddr};
-            std::cout<<"x and y from client raw"<<received_packet.x<<" "<<received_packet.y<<std::endl;
+            std::cout << "x=" << static_cast<int>(received_packet.x)
+          << " y=" << static_cast<int>(received_packet.y)
+          << " char=" << received_packet.character << std::endl;
             if(!worker.assign_task(task)){
                 std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
             }
