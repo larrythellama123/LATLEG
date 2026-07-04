@@ -23,13 +23,13 @@ class Map{
         if(!file){
             std::cerr<<"file not found";
         }
-        full_map.reserve(300*300);
+        full_map.reserve(254*254);
         std::string line;
         while (std::getline(file, line)) {
             full_map.insert(full_map.end(), line.begin(), line.end());
         }
-        for(int i =0 ; i < 300; i += 10){
-            for(int j =0 ; j < 300; j += 10){
+        for(int i =0 ; i < 254; i += 10){
+            for(int j =0 ; j < 254; j += 10){
                 std::pair<int, int> p = {i/10, j/10};
                 bucket_map[p] = {};
             }       
@@ -37,7 +37,9 @@ class Map{
     }
 
     void updatePositionAndBucket(const PlayerPacketInput& PP_input){
-        full_map[PP_input.y * 300 + PP_input.x] = PP_input.character;
+        full_map[PP_input.y * 254 + PP_input.x] = PP_input.character;
+        full_map[PP_input.prev_y * 254 + PP_input.prev_x] = ' ';
+
         std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
         std::pair<int,int> p2 = {PP_input.prev_x/10,PP_input.prev_y/10};
         if(p1!=p2){
@@ -61,13 +63,13 @@ class Map{
     }   
 
     bool checkLegal(const PlayerPacketInput& PP_input){
-        if(PP_input.x < 0 && PP_input.x > 300){
-            return false;    
-        }
-        if(PP_input.y < 0 && PP_input.y > 300){
-            return false;    
-        }
-        if(full_map[PP_input.y*300 + PP_input.x] == '*'){
+        // if(PP_input.x < 0 && PP_input.x > 254){
+        //     return false;    
+        // }
+        // if(PP_input.y < 0 && PP_input.y > 254){
+        //     return false;    
+        // }
+        if(full_map[PP_input.y*254 + PP_input.x] == '*'){
             return false;    
         } 
         return true;
@@ -84,7 +86,7 @@ class Map{
         if(!checkLegal(PP_input)){
             PP_output.x = PP_output.prev_x;
             PP_output.y = PP_output.prev_y;
-
+            std::cout<<"DEBUG"<<std::endl;
             return PP_output;
         }
         PP_output.enemy_positions = checkEnemy(PP_input);

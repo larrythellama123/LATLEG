@@ -180,10 +180,18 @@ public:
         return PP;
     }
 
+    void fix(PlayerPacketOutput PP){
+        prev_x = PP.prev_x;
+        prev_y = PP.prev_y;
+        x = PP.x;
+        y = PP.y;
+        character = PP.character;
+    }
+
 private:
     uint8_t x=2;
     uint8_t y=2;
-    uint8_t prev_x = 0;
-    uint8_t prev_y= 1;
+    uint8_t prev_x = 2;
+    uint8_t prev_y= 2;
     char  character = 'h';
 };

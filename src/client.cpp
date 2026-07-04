@@ -88,6 +88,7 @@ void signal_handler(int signum) {
             );
             if(bytes_received > 0){
                 received_packet = PlayerPacketOutput::deserialize(buffer_);
+                player->fix(received_packet);
                 renderer->render(received_packet);
             }
             else if (bytes_received < 0) {

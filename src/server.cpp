@@ -183,14 +183,14 @@ int main() {
         if(bytes_received > 0){
             received_packet = PlayerPacketInput::deserialize(buffer_);
             UDPTask task = {received_packet, cliaddr};
-            std::cout << "x=" << static_cast<int>(received_packet.x)
-          << " y=" << static_cast<int>(received_packet.y)
-          << " char=" << received_packet.character << std::endl;
+        //     std::cout << "x=" << static_cast<int>(received_packet.x)
+        //   << " y=" << static_cast<int>(received_packet.y)
+        //   << " char=" << received_packet.character << std::endl;
             if(!worker.assign_task(task)){
-                std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+                // std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
             }
             else{
-                std::cout<<"packet queued"<<std::endl;
+                // std::cout<<"packet queued"<<std::endl;
             };
         }
         else{
