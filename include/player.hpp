@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <iostream>
 #include <ncurses.h>
+#include <random> 
+#include <stdint.h>
 
 enum class PlayerState:uint8_t {
     Alive,    
@@ -131,18 +133,30 @@ public:
         initscr();             
         noecho();              
         nodelay(stdscr, TRUE); 
-        cbreak();    
+        cbreak();
+        std::ifstream file("./text_map.txt", std::ios::binary);
+            if(!file){
+                endwin(); 
+                std::cerr << "file not found\n";
+                std::exit(1);
+            }
+
+            full_map.reserve(254*254);
+            std::string line;
+            while (std::getline(file, line)) {
+                full_map.insert(full_map.end(), line.begin(), line.end());
+            }
+
     }
 
     ~Player(){
         endwin(); 
     }
 
-    void processInput() {
+    bool processInput() {
+        bool change  = false;
         // Store the previous position
-        prev_x = x;
-        prev_y = y;
-
+        
         // Read a single character from the terminal input buffer
         int ch = getch(); 
 
@@ -150,24 +164,92 @@ public:
         switch (ch) {
             case 'w':
             case 'W':
-                y -= 1; // Move Up
+            prev_x = x;
+            prev_y = y;
+            change  = true;
+            y =safe_sub(y,1);
                 break;
             case 's':
             case 'S':
-                y += 1; // Move Down
+            prev_x = x;
+            prev_y = y;
+            change  = true;
+            y =safe_add(y,1);
                 break;
             case 'a':
             case 'A':
-                x -= 1; // Move Left
+            prev_x = x;
+            prev_y = y;
+            change  = true;
+            x =safe_sub(x,1);
                 break;
             case 'd':
             case 'D':
-                x += 1; // Move Right
+            prev_x = x;
+            prev_y = y;
+            change  = true;
+            x =safe_add(x,1);
                 break;
             default:
                 // No movement or unhandled key
                 break;
         }
+        return change;
+    }
+    // void hehe(){
+    // std::cout << static_cast<int>(prev_y) << "  d0d  " << static_cast<int>(prev_x)
+    //           <<  std::endl;
+    // std::cout << static_cast<int>(y) << "  `OLO  " << static_cast<int>(x) << std::endl; 
+
+    // }
+    
+
+    bool AI_move(){
+        bool change = false;
+        
+        // 1. Obtain a random seed from the hardware
+        std::random_device rd; 
+        
+        // 2. Initialize the standard mersenne_twister_engine with the seed
+        std::mt19937 gen(rd()); 
+        
+        // 3. Define the distribution range [inclusive, inclusive]
+        std::uniform_int_distribution<int> distrib(1, 4); 
+
+        // 4. Generate the random number
+        int randomNum = distrib(gen); 
+
+        
+
+        switch (randomNum) {
+            case 1:
+            change  = true;
+            prev_x = x;
+        prev_y = y;
+            y = safe_sub(y,1);
+                break;
+            case 2:
+            change  = true;
+            prev_x = x;
+        prev_y = y;
+            y = safe_add(y,1);
+                break;
+            case 3:
+            change  = true;
+            prev_x = x;
+        prev_y = y;
+            x = safe_sub(x,1);
+                break;
+            case 4:
+            change  = true;
+            prev_x = x;
+        prev_y = y;
+            x = safe_add(x,1);
+                break;
+            default:
+                break;
+        }
+        return change;
     }
 
     PlayerPacketInput formPacket(){
@@ -180,12 +262,36 @@ public:
         return PP;
     }
 
-    void fix(PlayerPacketOutput PP){
+    bool fix(const PlayerPacketOutput& PP){
+        if(abs(PP.x - x) > 1 || abs(PP.y - y) > 1){
+             return false;
+        }
+        // std::cout<<static_cast<int>(prev_y)<<" "<<static_cast<int>(prev_x)<<std::endl;
+
+        move(prev_y, prev_x);
+        addch(' ');
+        refresh();
+
         prev_x = PP.prev_x;
         prev_y = PP.prev_y;
         x = PP.x;
         y = PP.y;
         character = PP.character;
+        return true;
+    }
+
+    uint8_t safe_add(uint8_t a, uint8_t b) {
+    if ((int)a + b > 255) {
+        return 255;
+    }
+    return a + b;
+    }
+
+    uint8_t safe_sub(uint8_t a, uint8_t b) {
+        if (b > a) {
+            return 0; // Prevent underflow below 0
+        }
+        return a - b;
     }
 
 private:
@@ -194,4 +300,6 @@ private:
     uint8_t prev_x = 2;
     uint8_t prev_y= 2;
     char  character = 'h';
+    std::vector<char>full_map;
+
 };

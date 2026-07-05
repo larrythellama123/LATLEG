@@ -47,6 +47,7 @@ class SPSCQueue{
             if(next_tail ==  head.load(std::memory_order_acquire)){
                 return false;
             }
+
             buffer[current_tail] = item;
             tail.store(next_tail, std::memory_order_release); 
             return true;
@@ -130,6 +131,10 @@ class Worker{
                 }
                 queue->pop(task);
                 PlayerPacketOutput PPO = map->sendUpdate(task.PP);
+                std::cout << "x=" << static_cast<int>(PPO.x)
+                << " y=" << static_cast<int>(PPO.y)<<std::endl;
+                std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
+                << " prevy=" << static_cast<int>(PPO.prev_y)<<std::endl;
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
             }
@@ -187,10 +192,10 @@ int main() {
         //   << " y=" << static_cast<int>(received_packet.y)
         //   << " char=" << received_packet.character << std::endl;
             if(!worker.assign_task(task)){
-                // std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+                std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
             }
             else{
-                // std::cout<<"packet queued"<<std::endl;
+                std::cout<<"packet queued"<<std::endl;
             };
         }
         else{

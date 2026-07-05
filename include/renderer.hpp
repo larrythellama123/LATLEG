@@ -52,11 +52,12 @@ class Renderer{
         void render(const PlayerPacketOutput& PP){
             // int top  = std::clamp(PP.y - 50, 0, 254 - 101);
             // int left = std::clamp(PP.x - 50, 0, 254 - 101);
+            move(PP.prev_y, PP.prev_x);
+            addch(full_map[PP.prev_y*254+PP.prev_x]);
             move(PP.y, PP.x);
             addch(PP.character);
             refresh();
-            move(PP.y, PP.x);
-            addch(full_map[PP.y*254+PP.x]);
+            
         }
         
 private:

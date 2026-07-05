@@ -63,12 +63,12 @@ class Map{
     }   
 
     bool checkLegal(const PlayerPacketInput& PP_input){
-        // if(PP_input.x < 0 && PP_input.x > 254){
-        //     return false;    
-        // }
-        // if(PP_input.y < 0 && PP_input.y > 254){
-        //     return false;    
-        // }
+        if(PP_input.x < 0 || PP_input.x > 254){
+            return false;    
+        }
+        if(PP_input.y < 0 || PP_input.y > 254){
+            return false;    
+        }
         if(full_map[PP_input.y*254 + PP_input.x] == '*'){
             return false;    
         } 
@@ -91,6 +91,7 @@ class Map{
         }
         PP_output.enemy_positions = checkEnemy(PP_input);
         updatePositionAndBucket( PP_input);
+        // std::cout<<static_cast<int>(PP_output.x)<<" " << static_cast<int>(PP_output.y)<<std::endl;
         return PP_output;
     }
 

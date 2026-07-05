@@ -70,15 +70,20 @@ void signal_handler(int signum) {
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
         bool first_render = true;
-        std::vector<uint8_t> buffer_(10); 
+        std::vector<uint8_t> buffer_(65535); 
+
+        
+
         while(keep_running.load()){
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             //changes to the player location then send to server
-            if(player->processInput() || first_render){
+            if(player->AI_move()){
                 PlayerPacketInput PPI = player->formPacket();
                 std::vector<uint8_t> payload = PPI.serialize();
                 sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
                 first_render = false;
             }
+            
             ssize_t bytes_received = recvfrom(
                 sockfd, 
                 reinterpret_cast<char*>(buffer_.data()),      
@@ -87,7 +92,7 @@ void signal_handler(int signum) {
                 (struct sockaddr*)&cliaddr, 
                 &len
             );
-
+            
             if(bytes_received > 0){
                 received_packet = PlayerPacketOutput::deserialize(buffer_);
                 if(player->fix(received_packet)){
