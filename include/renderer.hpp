@@ -20,13 +20,6 @@ class Renderer{
                 full_map.insert(full_map.end(), line.begin(), line.end());
             }
 
-           
-            // for(int i =0 ; i < 254; i++){
-            //     for(int j =0 ; j < 254; j++){
-            //         std::cout<<full_map[i*254 + j];
-            //     }       
-            //     std::cout<<""<<std::endl;
-            // }
 
             chunk.resize(254*254);
             for(int i =0 ; i < 100; i ++){
@@ -41,10 +34,6 @@ class Renderer{
                     addch(full_map[j*254 + i]);
                 }
             }
-                
-            // mvwaddch(pad, i, j, full_map[i*254 + j]);
-
-            // prefresh(pad, 0, 0, 0, 0, 99, 99); 
             refresh();
 
         }
@@ -56,6 +45,14 @@ class Renderer{
             addch(full_map[PP.prev_y*254+PP.prev_x]);
             move(PP.y, PP.x);
             addch(PP.character);
+            
+            for(const auto& enemy_pos: PP.enemy_positions){
+                move(enemy_pos.prev_y, enemy_pos.prev_x);
+                addch(full_map[enemy_pos.prev_y*254+enemy_pos.prev_x]);
+                move(enemy_pos.y, enemy_pos.x);
+                addch(enemy_pos.character);    
+            } 
+
             refresh();
             
         }

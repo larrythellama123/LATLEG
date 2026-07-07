@@ -1,7 +1,7 @@
 // Client side implementation of UDP client-server model
 
 #include <bits/stdc++.h>
-#include <fcntl.h>
+// #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -56,16 +56,24 @@ void signal_handler(int signum) {
             perror("socket creation failed");
             exit(EXIT_FAILURE);
         }
-        fcntl(sockfd, F_SETFL, O_NONBLOCK);
+        struct timeval tv;
+        tv.tv_sec = 1;  //1 sec timeout
+        tv.tv_usec = 0;
+
+        // Set the receive timeout option
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+        
+        //comment agn for non-blocking option
+        // fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
         memset(&servaddr, 0, sizeof(servaddr));
         memset(&cliaddr, 0, sizeof(cliaddr));
 
 
         // Fill server address info
-        servaddr.sin_family = AF_INET;              // IPv4
-        servaddr.sin_port   = htons(PORT);          // Server port
-        servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server IP
+        servaddr.sin_family = AF_INET;              
+        servaddr.sin_port   = htons(PORT);          
+        servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
 
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
@@ -75,7 +83,6 @@ void signal_handler(int signum) {
         
 
         while(keep_running.load()){
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             //changes to the player location then send to server
             if(player->AI_move()){
                 PlayerPacketInput PPI = player->formPacket();

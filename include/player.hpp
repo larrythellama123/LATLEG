@@ -14,6 +14,8 @@ enum class PlayerState:uint8_t {
 struct EnemyInfo {
     uint8_t x;
     uint8_t y;
+    uint8_t prev_x;
+    uint8_t prev_y;
     char character;
 
     bool operator==(const EnemyInfo& other) const {
@@ -218,33 +220,55 @@ public:
 
         // 4. Generate the random number
         int randomNum = distrib(gen); 
-
-        
-
+        uint8_t tmp;
         switch (randomNum) {
             case 1:
-            change  = true;
-            prev_x = x;
-        prev_y = y;
+            tmp = y; 
             y = safe_sub(y,1);
-                break;
+            if(!checkLegal(x,y)){
+                y = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = x;
+                prev_y = tmp;
+            }
+            break;
             case 2:
-            change  = true;
-            prev_x = x;
-        prev_y = y;
+            tmp = y; 
             y = safe_add(y,1);
+            if(!checkLegal(x,y)){
+                y = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = x;
+                prev_y = tmp;
+            }
                 break;
             case 3:
-            change  = true;
-            prev_x = x;
-        prev_y = y;
+            tmp = x;
             x = safe_sub(x,1);
+            if(!checkLegal(x,y)){
+                x = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = tmp;
+                prev_y = y;
+            }
                 break;
             case 4:
-            change  = true;
-            prev_x = x;
-        prev_y = y;
+            tmp = x;
             x = safe_add(x,1);
+            if(!checkLegal(x,y)){
+                x = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = tmp;
+                prev_y = y  ;
+            }
                 break;
             default:
                 break;
@@ -263,15 +287,16 @@ public:
     }
 
     bool fix(const PlayerPacketOutput& PP){
-        if(abs(PP.x - x) > 1 || abs(PP.y - y) > 1){
+        if(abs(PP.x - x) > 1 || abs(PP.y - y) > 1 || abs(PP.x - x) >=1  && abs(PP.y - y) >= 1){
              return false;
         }
-        // std::cout<<static_cast<int>(prev_y)<<" "<<static_cast<int>(prev_x)<<std::endl;
 
+        //remove earlier character if its present
         move(prev_y, prev_x);
         addch(' ');
         refresh();
 
+        //fix player coords with verified ones
         prev_x = PP.prev_x;
         prev_y = PP.prev_y;
         x = PP.x;
@@ -294,6 +319,28 @@ public:
         return a - b;
     }
 
+    bool checkLegal(uint8_t x, uint8_t y){
+        if(y < 0 || y > 254){
+            return false;    
+        }
+        if(x < 0 || x > 254){
+            return false;    
+        }
+        if(full_map[y*254 + x] == '*'){
+            return false;    
+        } 
+        return true;
+    }
+
+    PlayerState checkDead(const PlayerPacketOutput& PP){
+        for(const auto& enemy_pos: PP.enemy_positions){
+            if(enemy_pos.x == x && enemy_pos.y == y){
+               return PlayerState::Dead; 
+            }
+        }
+        return PlayerState::Alive;
+    }
+
 private:
     uint8_t x=2;
     uint8_t y=2;
@@ -301,5 +348,4 @@ private:
     uint8_t prev_y= 2;
     char  character = 'h';
     std::vector<char>full_map;
-
 };
