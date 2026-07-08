@@ -102,6 +102,8 @@ public:
             buffer.push_back(static_cast<uint8_t>(enemy.character));
             buffer.push_back(enemy.x);
             buffer.push_back(enemy.y);
+            buffer.push_back(enemy.prev_x);
+            buffer.push_back(enemy.prev_y);
         }
         return buffer;
     }
@@ -122,6 +124,8 @@ public:
             enemy.character = static_cast<char>(buffer[offset++]);
             enemy.x  = buffer[offset++];
             enemy.y  = buffer[offset++];
+            enemy.prev_x  = buffer[offset++];
+            enemy.prev_y  = buffer[offset++];
             PP.enemy_positions.push_back(enemy);
         }
         return PP;
