@@ -26,11 +26,7 @@ void signal_handler(int signum) {
 }
 
     int main() {
-        // initscr();             
-        // noecho();              
-        // nodelay(stdscr, TRUE); 
-        // cbreak();  
-        
+       
         initscr();
         cbreak();
         noecho();
@@ -40,11 +36,7 @@ void signal_handler(int signum) {
         std::unique_ptr<Player> player = std::make_unique<Player>(); 
         std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>();
         
-        //test
-        // PlayerPacketOutput PP;
-        // while(keep_running.load()){
-        //     renderer->render(PP);
-        // }
+        
 
         int sockfd;
         char buffer[MAXLINE];
@@ -85,7 +77,7 @@ void signal_handler(int signum) {
 
         while(keep_running.load()){
             //changes to the player location then send to server
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            // std::this_thread::sleep_for(std::chrono::milliseconds(300));
             if(player->AI_move()){
                 PlayerPacketInput PPI = player->formPacket();
                 std::vector<uint8_t> payload = PPI.serialize();

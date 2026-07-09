@@ -31,8 +31,10 @@ struct SockaddrLess {
 constexpr int THREAD_POOL_SIZE = 4;
 
 struct UDPTask{
+    public:
     PlayerPacketInput PP;
     sockaddr_in client_addr;
+    uint8_t player_id;
 };
 
 
@@ -112,6 +114,7 @@ class Worker{
         std::thread thread;
         std::atomic<bool> running = true;
         std::set<sockaddr_in, SockaddrLess> client_addresses;
+        uint8_t player_id = 0;
         int sockfd;
     public:
         Worker(int sock_fd_) : sockfd(sock_fd_),thread(&Worker<size>::worker_function, this){}
@@ -123,7 +126,11 @@ class Worker{
             }
         }
 
-        bool assign_task(const UDPTask &item){
+        bool assign_task(UDPTask &item){
+            auto it = client_addresses.find(item.client_addr);
+            if(it == client_addresses.end()){
+                item.player_id = player_id++;
+            }
             client_addresses.insert(item.client_addr);
             if(!queue->full()){
                 queue->push(item);
@@ -141,7 +148,7 @@ class Worker{
                     continue;
                 }
                 queue->pop(task);
-                PlayerPacketOutput PPO = map->sendUpdate(task.PP);
+                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id);
                 std::cout << "x=" << static_cast<int>(PPO.x)
                 << " y=" << static_cast<int>(PPO.y)<<std::endl;
                 std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
@@ -194,7 +201,7 @@ int main() {
     }
 
    
-    Worker<16> worker(sockfd);
+    Worker<64> worker(sockfd);
     socklen_t len;
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;

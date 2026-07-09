@@ -61,49 +61,68 @@ class Map{
     std::cout << "===========================\n";
 }
 
-    void updatePositionAndBucket(const PlayerPacketInput& PP_input){
-        full_map[PP_input.y * 254 + PP_input.x] = PP_input.character;
-        full_map[PP_input.prev_y * 254 + PP_input.prev_x] = ' ';
+    // void updatePositionAndBucket(const PlayerPacketInput& PP_input){
+    //     full_map[PP_input.y * 254 + PP_input.x] = PP_input.character;
+    //     full_map[PP_input.prev_y * 254 + PP_input.prev_x] = ' ';
 
-        std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
-        std::pair<int,int> p2 = {PP_input.prev_x/10,PP_input.prev_y/10};
+    //     std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
+    //     std::pair<int,int> p2 = {PP_input.prev_x/10,PP_input.prev_y/10};
 
 
-        EnemyInfo tmp = {PP_input.prev_x,PP_input.prev_y,0,0,PP_input.character};
-        bucket_map[p2].erase(tmp);
-        std::cout<<"  p1f "<<p1.first<<" p1s "<<p1.second<<std::endl;
-        EnemyInfo tmp2 = {PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y,PP_input.character};
-        bucket_map[p1].insert(tmp2);
-        // printBucketMap(bucket_map);
+    //     EnemyInfo tmp = {PP_input.prev_x,PP_input.prev_y,0,0,PP_input.character};
+    //     bucket_map[p2].erase(tmp);
+    //     std::cout<<"  p1f "<<p1.first<<" p1s "<<p1.second<<std::endl;
+    //     EnemyInfo tmp2 = {PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y,PP_input.character};
+    //     bucket_map[p1].insert(tmp2);
+    //     // printBucketMap(bucket_map);
         
+    // }
+
+
+    void updatePositionAndBucket(const PlayerPacketInput& PP_input, uint8_t player_id){
+        std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
+        enemy_map[player_id] = {PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y,PP_input.character};
     }
 
+    
+    
+    // std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input){
+    //     std::pair<int,int> p = {PP_input.x/10,PP_input.y/10};
+    //     std::vector<EnemyInfo> enemy_positions;
+    //     for(const auto& dir : directions){
+    //         int tmp1 = p.first + dir[0];
+    //         int tmp2 = p.second + dir[1];   
+
+    //         if(tmp1 < 0 || tmp1 > 25 || tmp2 < 0 || tmp2 > 25){
+    //             continue;
+    //         }
+    //         std::cout << " tmp 1 " << static_cast<int>(PP_input.x) <<" tmp2  "<< tmp2<<std::endl;
+    //         std::unordered_set<EnemyInfo> set = bucket_map[{tmp1,tmp2}];
+    //         for (const auto& element : set) {
+    //             // if(element.x  ==  PP_input.x && element.y == PP_input.y){
+    //             //     continue;
+    //             // }
+    //             std::cout << "x=" << static_cast<int>(element.x)
+    //             << " y=" << static_cast<int>(element.y)
+    //             << " char=" << element.character << std::endl;
+    //             enemy_positions.emplace_back(element);
+    //         }
+    //     }
+    //     return enemy_positions;
+    // }
     
     
     std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input){
         std::pair<int,int> p = {PP_input.x/10,PP_input.y/10};
         std::vector<EnemyInfo> enemy_positions;
-        for(const auto& dir : directions){
-            int tmp1 = p.first + dir[0];
-            int tmp2 = p.second + dir[1];   
-
-            if(tmp1 < 0 || tmp1 > 25 || tmp2 < 0 || tmp2 > 25){
-                continue;
-            }
-            std::cout << " tmp 1 " << static_cast<int>(PP_input.x) <<" tmp2  "<< tmp2<<std::endl;
-            std::unordered_set<EnemyInfo> set = bucket_map[{tmp1,tmp2}];
-            for (const auto& element : set) {
-                // if(element.x  ==  PP_input.x && element.y == PP_input.y){
-                //     continue;
-                // }
-                std::cout << "x=" << static_cast<int>(element.x)
-                << " y=" << static_cast<int>(element.y)
-                << " char=" << element.character << std::endl;
-                enemy_positions.emplace_back(element);
-            }
+        for(const auto& [player_id, player_info]  : enemy_map){
+            std::cout << "x=" << static_cast<int>(player_info.x)
+            << " y=" << static_cast<int>(player_info.y)
+            << " char=" << player_info.character << std::endl;
+            enemy_positions.emplace_back(player_info);
         }
         return enemy_positions;
-    }   
+    }
 
     bool checkLegal(const PlayerPacketInput& PP_input){
         if(PP_input.x < 0 || PP_input.x > 254){
@@ -118,7 +137,7 @@ class Map{
         return true;
     }
     
-    PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input){
+    PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input, uint8_t player_id){
         PlayerPacketOutput PP_output;
         PP_output.x = PP_input.x;
         PP_output.y = PP_input.y;
@@ -134,7 +153,7 @@ class Map{
             std::cout<<"DEBUG"<<std::endl;
             return PP_output;
         }
-        updatePositionAndBucket( PP_input);
+        updatePositionAndBucket( PP_input, player_id);
         PP_output.enemy_positions = checkEnemy(PP_input);
         return PP_output;
     }
@@ -143,4 +162,5 @@ class Map{
         std::vector<std::vector<int>> directions = {{0,0},{1,1},{-1,1},{1,-1},{-1,-1},{1,0},{-1,0},{0,1},{0,-1}};
         std::vector<char>full_map;
         std::unordered_map<std::pair<int,int>, std::unordered_set<EnemyInfo>,PairHash> bucket_map;
+        std::unordered_map<int,EnemyInfo> enemy_map;
 };
