@@ -70,7 +70,7 @@ void signal_handler(int signum) {
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
         bool first_render = true;
-        std::vector<uint8_t> buffer_(10); 
+        std::vector<uint8_t> buffer_(65535); 
         while(keep_running.load()){
             //changes to the player location then send to server
             if(player->processInput() || first_render){

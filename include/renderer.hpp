@@ -41,6 +41,15 @@ class Renderer{
         void render(const PlayerPacketOutput& PP){
             // int top  = std::clamp(PP.y - 50, 0, 254 - 101);
             // int left = std::clamp(PP.x - 50, 0, 254 - 101);
+            
+
+            for (int i = std::max(PP.x - 10, 0); i < std::min(PP.x+10, 254); i++){
+                for (int j = std::max(PP.y - 10, 0); j < std::min(PP.y+10, 254); j++){
+                    move(j, i);
+                    addch(full_map[j*254 + i]);
+                }
+            }
+
             move(PP.prev_y, PP.prev_x);
             addch(full_map[PP.prev_y*254+PP.prev_x]);
             move(PP.y, PP.x);
@@ -48,7 +57,8 @@ class Renderer{
             
             for(const auto& enemy_pos: PP.enemy_positions){
                 move(enemy_pos.prev_y, enemy_pos.prev_x);
-                addch(full_map[enemy_pos.prev_y*254+enemy_pos.prev_x]);
+                addch(' ');
+                // std::cout<<static_cast<int>(enemy_pos.y) <<" "<< static_cast<int>(enemy_pos.x)<<std::endl;
                 move(enemy_pos.y, enemy_pos.x);
                 addch(enemy_pos.character);    
             } 
