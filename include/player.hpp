@@ -79,6 +79,8 @@ struct PlayerPacketInput {
 struct PlayerPacketOutput {
 public:
     uint8_t player_id;
+    bool legal =  true;
+    bool active_player = true;
     std::vector<EnemyInfo> enemy_positions;
     uint8_t x;
     uint8_t y;
@@ -90,6 +92,7 @@ public:
     std::vector<uint8_t> serialize(){
         std::vector<uint8_t> buffer;
         buffer.push_back(player_id);
+        buffer.push_back(static_cast<uint8_t>(active_player));
         buffer.push_back(x);
         buffer.push_back(y);
         buffer.push_back(prev_x);
@@ -102,6 +105,10 @@ public:
             buffer.push_back(static_cast<uint8_t>(enemy.character));
             buffer.push_back(enemy.x);
             buffer.push_back(enemy.y);
+            if(!active_player){
+                std::cout<<static_cast<int>(enemy.y) <<" enemy serilaization "<< static_cast<int>(enemy.x)<<std::endl;
+            }
+
             buffer.push_back(enemy.prev_x);
             buffer.push_back(enemy.prev_y);
         }
@@ -112,6 +119,7 @@ public:
         PlayerPacketOutput PP;
         size_t offset = 0;
         PP.player_id = buffer[offset++];
+        PP.active_player = static_cast<bool>(buffer[offset++]);
         PP.x = buffer[offset++];
         PP.y = buffer[offset++];
         PP.prev_x = buffer[offset++];

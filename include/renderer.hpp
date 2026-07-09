@@ -50,12 +50,21 @@ class Renderer{
                 }
             }
 
-            move(PP.prev_y, PP.prev_x);
-            addch(full_map[PP.prev_y*254+PP.prev_x]);
-            move(PP.y, PP.x);
-            addch(PP.character);
-            
+            if(PP.active_player){
+                move(PP.prev_y, PP.prev_x);
+                addch(full_map[PP.prev_y*254+PP.prev_x]);
+                move(PP.y, PP.x);
+                addch(PP.character);
+                refresh();
+            }
+            render_only_enemies(PP);
+        }
+        
+        void render_only_enemies(const PlayerPacketOutput& PP){
             for(const auto& enemy_pos: PP.enemy_positions){
+                if(enemy_pos.x  ==  PP.x && enemy_pos.y == PP.y){
+                    continue;
+                }
                 move(enemy_pos.prev_y, enemy_pos.prev_x);
                 addch(' ');
                 // std::cout<<static_cast<int>(enemy_pos.y) <<" "<< static_cast<int>(enemy_pos.x)<<std::endl;
@@ -64,7 +73,6 @@ class Renderer{
             } 
 
             refresh();
-            
         }
         
 private:

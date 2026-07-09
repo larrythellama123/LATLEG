@@ -93,9 +93,9 @@ class Map{
             std::cout << " tmp 1 " << static_cast<int>(PP_input.x) <<" tmp2  "<< tmp2<<std::endl;
             std::unordered_set<EnemyInfo> set = bucket_map[{tmp1,tmp2}];
             for (const auto& element : set) {
-                if(element.x  ==  PP_input.x && element.y == PP_input.y){
-                    continue;
-                }
+                // if(element.x  ==  PP_input.x && element.y == PP_input.y){
+                //     continue;
+                // }
                 std::cout << "x=" << static_cast<int>(element.x)
                 << " y=" << static_cast<int>(element.y)
                 << " char=" << element.character << std::endl;
@@ -129,6 +129,8 @@ class Map{
         if(!checkLegal(PP_input)){
             PP_output.x = PP_output.prev_x;
             PP_output.y = PP_output.prev_y;
+            PP_output.legal = false;
+            PP_output.enemy_positions = checkEnemy(PP_input);
             std::cout<<"DEBUG"<<std::endl;
             return PP_output;
         }

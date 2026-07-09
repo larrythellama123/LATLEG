@@ -12,7 +12,8 @@
 #include <csignal>
 #include <atomic>
 #include <memory>
-
+#include <thread>
+#include <chrono>
 
 #define PORT     8080
 #define MAXLINE  1024
@@ -84,6 +85,7 @@ void signal_handler(int signum) {
 
         while(keep_running.load()){
             //changes to the player location then send to server
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if(player->AI_move()){
                 PlayerPacketInput PPI = player->formPacket();
                 std::vector<uint8_t> payload = PPI.serialize();
@@ -102,9 +104,15 @@ void signal_handler(int signum) {
             
             if(bytes_received > 0){
                 received_packet = PlayerPacketOutput::deserialize(buffer_);
-                if(player->fix(received_packet)){
+                if(received_packet.active_player){
+                    if(player->fix(received_packet)){
+                        renderer->render(received_packet);
+                    }
+                }
+                else{
                     renderer->render(received_packet);
                 }
+                
             }
             else if (bytes_received < 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {} else {

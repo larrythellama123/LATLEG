@@ -25,10 +25,6 @@ void signal_handler(int signum) {
 }
 
     int main() {
-        // initscr();             
-        // noecho();              
-        // nodelay(stdscr, TRUE); 
-        // cbreak();  
         
         initscr();
         cbreak();
@@ -38,12 +34,6 @@ void signal_handler(int signum) {
         std::signal(SIGINT, signal_handler);
         std::unique_ptr<Player> player = std::make_unique<Player>(); 
         std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>();
-        
-        //test
-        // PlayerPacketOutput PP;
-        // while(keep_running.load()){
-        //     renderer->render(PP);
-        // }
 
         int sockfd;
         char buffer[MAXLINE];
@@ -79,6 +69,7 @@ void signal_handler(int signum) {
                 sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
                 first_render = false;
             }
+            
             ssize_t bytes_received = recvfrom(
                 sockfd, 
                 reinterpret_cast<char*>(buffer_.data()),      
@@ -90,9 +81,15 @@ void signal_handler(int signum) {
 
             if(bytes_received > 0){
                 received_packet = PlayerPacketOutput::deserialize(buffer_);
-                if(player->fix(received_packet)){
+                if(received_packet.active_player){
+                    if(player->fix(received_packet)){
+                        renderer->render(received_packet);
+                    }
+                }
+                else{
                     renderer->render(received_packet);
                 }
+                
             }
             else if (bytes_received < 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {} else {

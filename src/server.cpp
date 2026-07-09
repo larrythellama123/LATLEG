@@ -15,6 +15,15 @@
 #include <mutex>
 #include <chrono>
 #include <condition_variable>
+#include <tuple>
+
+struct SockaddrLess {
+    bool operator()(const sockaddr_in& lhs, const sockaddr_in& rhs) const {
+        return std::tie(lhs.sin_addr.s_addr, lhs.sin_port) < 
+               std::tie(rhs.sin_addr.s_addr, rhs.sin_port);
+    }
+};
+
 
 
 #define PORT     8080 
@@ -102,6 +111,7 @@ class Worker{
         std::unique_ptr<Map> map = std::make_unique<Map>();
         std::thread thread;
         std::atomic<bool> running = true;
+        std::set<sockaddr_in, SockaddrLess> client_addresses;
         int sockfd;
     public:
         Worker(int sock_fd_) : sockfd(sock_fd_),thread(&Worker<size>::worker_function, this){}
@@ -114,6 +124,7 @@ class Worker{
         }
 
         bool assign_task(const UDPTask &item){
+            client_addresses.insert(item.client_addr);
             if(!queue->full()){
                 queue->push(item);
                 return true;    
@@ -137,6 +148,19 @@ class Worker{
                 << " prevy=" << static_cast<int>(PPO.prev_y)<<std::endl;
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
+                if(PPO.legal){
+                    PPO.active_player = false;
+                    PPO.x = 0;
+                    PPO.y = 0; 
+                    payload = PPO.serialize();
+                    for(const auto& client_addr: client_addresses){
+                        if(std::memcmp(&client_addr, &task.client_addr,sizeof(sockaddr_in)) == 0){
+                            continue;
+                        }
+                        sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&client_addr, sizeof(client_addr));
+                    }
+                }
+                
             }
             
         }
@@ -183,7 +207,7 @@ int main() {
             buffer_.size(), 
             0, 
             (struct sockaddr*)&cliaddr, 
-            &len
+        &len
         );
         if(bytes_received > 0){
             received_packet = PlayerPacketInput::deserialize(buffer_);
