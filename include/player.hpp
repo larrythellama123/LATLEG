@@ -48,10 +48,12 @@ namespace std {
 }
 
 struct PlayerPacketInput {
+    public:
     uint8_t prev_x;
     uint8_t prev_y;
     uint8_t x;
     uint8_t y;
+    uint8_t seq_num;
     char character;
     std::vector<uint8_t> serialize() const {
         std::vector<uint8_t> buffer;
@@ -59,6 +61,7 @@ struct PlayerPacketInput {
         buffer.push_back(y);
         buffer.push_back(prev_x);
         buffer.push_back(prev_y);
+        buffer.push_back(seq_num);
         buffer.push_back(static_cast<uint8_t>(character));
         return buffer;
     }
@@ -71,6 +74,7 @@ struct PlayerPacketInput {
         PP.y = buffer[offset++];
         PP.prev_x = buffer[offset++];
         PP.prev_y = buffer[offset++];
+        PP.seq_num = buffer[offset++];
         PP.character = static_cast<char>(buffer[offset++]);
         return PP;
     }
@@ -86,6 +90,7 @@ public:
     uint8_t y;
     uint8_t prev_x;
     uint8_t prev_y;
+    uint8_t seq_num;
     char character;
     PlayerState PS;
 
@@ -97,6 +102,7 @@ public:
         buffer.push_back(y);
         buffer.push_back(prev_x);
         buffer.push_back(prev_y);
+        buffer.push_back(seq_num);
         buffer.push_back(static_cast<uint8_t>(character));
         buffer.push_back(static_cast<uint8_t>(PS));
         uint8_t enemy_count = static_cast<uint8_t>(enemy_positions.size());
@@ -124,6 +130,7 @@ public:
         PP.y = buffer[offset++];
         PP.prev_x = buffer[offset++];
         PP.prev_y = buffer[offset++];
+        PP.seq_num = buffer[offset++];
         PP.character = static_cast<char>(buffer[offset++]);
         PP.PS = static_cast<PlayerState>(buffer[offset++]);
         uint8_t enemy_count = buffer[offset++];
@@ -165,6 +172,15 @@ public:
 
     ~Player(){
         endwin(); 
+    }
+
+    uint8_t get_seq_num(){
+        if(seq_num == 255)seq_num = 0;
+        return seq_num;
+    }
+
+    void add_seq_num(){
+        seq_num++;
     }
 
     bool processInput() {
@@ -210,12 +226,6 @@ public:
         }
         return change;
     }
-    // void hehe(){
-    // std::cout << static_cast<int>(prev_y) << "  d0d  " << static_cast<int>(prev_x)
-    //           <<  std::endl;
-    // std::cout << static_cast<int>(y) << "  `OLO  " << static_cast<int>(x) << std::endl; 
-
-    // }
     
 
     bool AI_move(){
@@ -303,11 +313,6 @@ public:
              return false;
         }
 
-        //remove earlier character if its present
-        move(prev_y, prev_x);
-        addch(' ');
-        refresh();
-
         //fix player coords with verified ones
         prev_x = PP.prev_x;
         prev_y = PP.prev_y;
@@ -326,16 +331,19 @@ public:
 
     uint8_t safe_sub(uint8_t a, uint8_t b) {
         if (b > a) {
-            return 0; // Prevent underflow below 0
+            return 0; 
         }
         return a - b;
     }
 
     bool checkLegal(uint8_t x, uint8_t y){
-        if(y < 0 || y > 254){
+        if(y != prev_y && x != prev_x){
+            return false;
+        }
+        if(y < 0 || y > 254 || abs(y - prev_y) > 1){
             return false;    
         }
-        if(x < 0 || x > 254){
+        if(x < 0 || x > 254 || abs(x - prev_x) > 1){
             return false;    
         }
         if(full_map[y*254 + x] == '*'){
@@ -355,9 +363,10 @@ public:
 
 private:
     uint8_t x=2;
-    uint8_t y=2;
+    uint8_t y=4;
     uint8_t prev_x = 2;
-    uint8_t prev_y= 2;
+    uint8_t prev_y = 4;
     char  character = 'h';
     std::vector<char>full_map;
+    uint8_t seq_num=0;
 };

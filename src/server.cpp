@@ -152,7 +152,7 @@ class Worker{
                 std::cout << "x=" << static_cast<int>(PPO.x)
                 << " y=" << static_cast<int>(PPO.y)<<std::endl;
                 std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
-                << " prevy=" << static_cast<int>(PPO.prev_y)<<std::endl;
+                << " seq_num    " << static_cast<int>(PPO.seq_num)<<std::endl;
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
                 if(PPO.legal){
@@ -219,9 +219,7 @@ int main() {
         if(bytes_received > 0){
             received_packet = PlayerPacketInput::deserialize(buffer_);
             UDPTask task = {received_packet, cliaddr};
-        //     std::cout << "x=" << static_cast<int>(received_packet.x)
-        //   << " y=" << static_cast<int>(received_packet.y)
-        //   << " char=" << received_packet.character << std::endl;
+            std::cout << " seq_num=" << static_cast<int>(received_packet.seq_num) << std::endl;
             if(!worker.assign_task(task)){
                 std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
             }

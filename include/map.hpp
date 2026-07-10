@@ -139,6 +139,7 @@ class Map{
     
     PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input, uint8_t player_id){
         PlayerPacketOutput PP_output;
+        PP_output.seq_num = PP_input.seq_num;
         PP_output.x = PP_input.x;
         PP_output.y = PP_input.y;
         PP_output.prev_x = PP_input.prev_x;
