@@ -60,6 +60,13 @@ class Map{
     }
     std::cout << "===========================\n";
 }
+void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map) {
+    // If you are using C++17 or newer (Structured Bindings)
+    for (const auto& [player_id, info] : enemy_map) {
+        std::cout << "Player ID: " << static_cast<int>(player_id) 
+                  << " | Character: " << info.character << "\n";
+    }
+}
 
     // void updatePositionAndBucket(const PlayerPacketInput& PP_input){
     //     full_map[PP_input.y * 254 + PP_input.x] = PP_input.character;
@@ -81,8 +88,13 @@ class Map{
 
     void updatePositionAndBucket(const PlayerPacketInput& PP_input, uint8_t player_id){
         std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
+        printEnemyCharacters(enemy_map);
+        std::cout<<" player id  "<< static_cast<int>(player_id)  << " char= "<<PP_input.character << std::endl;
         enemy_map[player_id] = {PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y,PP_input.character};
+        std::cout<<" round 2 player id  "<< static_cast<int>(player_id) << " char= "<<PP_input.character << std::endl;
+    
     }
+
 
     
     
@@ -118,7 +130,7 @@ class Map{
         for(const auto& [player_id, player_info]  : enemy_map){
             std::cout << "x=" << static_cast<int>(player_info.x)
             << " y=" << static_cast<int>(player_info.y)
-            << " char=" << player_info.character << std::endl;
+            << " char=" << player_info.character <<" id= "<<player_id <<  std::endl;
             enemy_positions.emplace_back(player_info);
         }
         return enemy_positions;
@@ -163,5 +175,5 @@ class Map{
         std::vector<std::vector<int>> directions = {{0,0},{1,1},{-1,1},{1,-1},{-1,-1},{1,0},{-1,0},{0,1},{0,-1}};
         std::vector<char>full_map;
         std::unordered_map<std::pair<int,int>, std::unordered_set<EnemyInfo>,PairHash> bucket_map;
-        std::unordered_map<int,EnemyInfo> enemy_map;
+        std::unordered_map<uint8_t,EnemyInfo> enemy_map;
 };

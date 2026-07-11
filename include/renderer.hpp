@@ -62,9 +62,9 @@ class Renderer{
         
         void render_only_enemies(const PlayerPacketOutput& PP){
             for(const auto& enemy_pos: PP.enemy_positions){
-                if(enemy_pos.x  ==  PP.x && enemy_pos.y == PP.y){
-                    continue;
-                }
+                // if(enemy_pos.x  ==  PP.x && enemy_pos.y == PP.y){
+                //     continue;
+                // }
                 move(enemy_pos.prev_y, enemy_pos.prev_x);
                 addch(' ');
                 // std::cout<<static_cast<int>(enemy_pos.y) <<" "<< static_cast<int>(enemy_pos.x)<<std::endl;

@@ -30,7 +30,9 @@ void signal_handler(int signum) {
     }
 }
 
-    int main() {
+    int main(int argc, char* argv[]) {
+
+        
        
         initscr();
         cbreak();
@@ -40,7 +42,14 @@ void signal_handler(int signum) {
         std::signal(SIGINT, signal_handler);
         std::unique_ptr<Player> player = std::make_unique<Player>(); 
         std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>();
-        
+
+        if (argc != 4 && argc > 1) {
+            std::cout << "Need 3 args";
+            return 1;
+        }
+        else if(argc == 4){
+            player->init(static_cast<uint8_t>(std::stoi(argv[1])),static_cast<uint8_t>(std::stoi(argv[2])),argv[3][0]);
+        }
 
         int sockfd;
         char buffer[MAXLINE];

@@ -361,11 +361,19 @@ public:
         return PlayerState::Alive;
     }
 
+    void init(uint8_t x_, uint8_t y_, char character_){
+        x = x_;
+        y = y_;
+        prev_x = x_;
+        prev_y = y_;
+        character = character_;
+    }
+
 private:
     uint8_t x=2;
-    uint8_t y=4;
+    uint8_t y=2;
     uint8_t prev_x = 2;
-    uint8_t prev_y = 4;
+    uint8_t prev_y = 2;
     char  character = 'h';
     std::vector<char>full_map;
     uint8_t seq_num=0;

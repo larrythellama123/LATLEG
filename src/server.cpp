@@ -114,6 +114,7 @@ class Worker{
         std::thread thread;
         std::atomic<bool> running = true;
         std::set<sockaddr_in, SockaddrLess> client_addresses;
+        std::map<sockaddr_in, uint8_t, SockaddrLess> player_id_map;
         uint8_t player_id = 0;
         int sockfd;
     public:
@@ -130,8 +131,9 @@ class Worker{
             auto it = client_addresses.find(item.client_addr);
             if(it == client_addresses.end()){
                 item.player_id = player_id++;
+                client_addresses.insert(item.client_addr);
             }
-            client_addresses.insert(item.client_addr);
+            item.player_id = player_id_map[item.client_addr];
             if(!queue->full()){
                 queue->push(item);
                 return true;    
