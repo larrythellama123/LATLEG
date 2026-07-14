@@ -10,12 +10,15 @@
 #include "player.hpp"
 #include "map.hpp"
 #include <memory>
-#include <thread>
 #include <queue>
-#include <mutex>
-#include <chrono>
-#include <condition_variable>
 #include <tuple>
+#include <thread>
+#include <chrono>
+
+using namespace std::chrono;
+const int TICKS_PER_SECOND = 3;
+const milliseconds TICK_RATE_DURATION(1000/TICKS_PER_SECOND);
+const milliseconds TICK_BASE (0);
 
 struct SockaddrLess {
     bool operator()(const sockaddr_in& lhs, const sockaddr_in& rhs) const {
@@ -130,6 +133,7 @@ class Worker{
         bool assign_task(UDPTask &item){
             auto it = client_addresses.find(item.client_addr);
             if(it == client_addresses.end()){
+                player_id_map[item.client_addr] = player_id;
                 item.player_id = player_id++;
                 client_addresses.insert(item.client_addr);
             }
@@ -210,6 +214,11 @@ int main() {
     std::vector<uint8_t> buffer_(65535); 
 
     while(1){
+        auto currentTime = steady_clock::now();
+        auto elapsedTime = duration_cast<milliseconds>(currentTime - previousTime);
+        previousTime = currentTime;
+        lag += elapsedTime;
+
         ssize_t bytes_received = recvfrom(
             sockfd, 
             reinterpret_cast<char*>(buffer_.data()),         

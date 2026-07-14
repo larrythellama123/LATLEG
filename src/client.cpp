@@ -12,12 +12,15 @@
 #include <csignal>
 #include <atomic>
 #include <memory>
+#include <chrono>
 
-
+using namespace std::chrono;
 #define PORT     8080
 #define MAXLINE  1024
 std::atomic<bool> keep_running{true};
-
+const int TICKS_PER_SECOND = 30;
+const milliseconds TICK_RATE_DURATION(1000 / TICKS_PER_SECOND);
+const milliseconds TICK_RATE_BASE(0);
 void signal_handler(int signum) {
     if (signum == SIGINT) {
         keep_running.store(false); 
@@ -60,16 +63,31 @@ void signal_handler(int signum) {
         socklen_t len = sizeof(servaddr);
         PlayerPacketOutput received_packet;
         bool first_render = true;
-        std::vector<uint8_t> buffer_(65535); 
+        std::vector<uint8_t> buffer_(65535);
+        auto previousTime = steady_clock::now();
+        milliseconds lag(0);
+
         while(keep_running.load()){
-            //changes to the player location then send to server
-            if(player->processInput() || first_render){
-                PlayerPacketInput PPI = player->formPacket();
-                std::vector<uint8_t> payload = PPI.serialize();
-                sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-                first_render = false;
+            auto currentTime = steady_clock::now();
+            auto elapsedTime = duration_cast<milliseconds>(currentTime - previousTime);
+            previousTime = currentTime;
+            lag += elapsedTime;
+
+            bool render = player->processInput();
+
+            if(lag >= TICK_RATE_DURATION){
+            std::cout << "Current lag: " << lag.count() << " ms" << std::endl;
+                
+                if(render || first_render){
+                    PlayerPacketInput PPI = player->formPacket();
+                    PPI.seq_num = player->get_seq_num();
+                    std::vector<uint8_t> payload = PPI.serialize();
+                    sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+                    first_render = false;    
+                }
+                lag -= TICK_RATE_DURATION;
             }
-            
+        
             ssize_t bytes_received = recvfrom(
                 sockfd, 
                 reinterpret_cast<char*>(buffer_.data()),      
@@ -82,6 +100,10 @@ void signal_handler(int signum) {
             if(bytes_received > 0){
                 received_packet = PlayerPacketOutput::deserialize(buffer_);
                 if(received_packet.active_player){
+                    if(received_packet.seq_num != player->get_seq_num()){
+                        continue;
+                    }
+                    player->add_seq_num();
                     if(player->fix(received_packet)){
                         renderer->render(received_packet);
                     }
