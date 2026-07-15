@@ -17,8 +17,8 @@
 
 using namespace std::chrono;
 const int TICKS_PER_SECOND = 3;
-const milliseconds TICK_RATE_DURATION(1000/TICKS_PER_SECOND);
-const milliseconds TICK_BASE (0);
+const microseconds TICK_RATE_DURATION(16666);
+const microseconds TICK_RATE_BASE (0);
 
 struct SockaddrLess {
     bool operator()(const sockaddr_in& lhs, const sockaddr_in& rhs) const {
@@ -212,10 +212,13 @@ int main() {
     len = sizeof(cliaddr);  
     PlayerPacketInput received_packet;
     std::vector<uint8_t> buffer_(65535); 
+    microseconds lag(0);
+    auto previousTime = steady_clock::now();
+
 
     while(1){
         auto currentTime = steady_clock::now();
-        auto elapsedTime = duration_cast<milliseconds>(currentTime - previousTime);
+        auto elapsedTime = duration_cast<microseconds>(currentTime - previousTime);
         previousTime = currentTime;
         lag += elapsedTime;
 
@@ -228,15 +231,19 @@ int main() {
         &len
         );
         if(bytes_received > 0){
-            received_packet = PlayerPacketInput::deserialize(buffer_);
-            UDPTask task = {received_packet, cliaddr};
-            std::cout << " seq_num=" << static_cast<int>(received_packet.seq_num) << std::endl;
-            if(!worker.assign_task(task)){
-                std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+            if (lag >= TICK_RATE_DURATION ){
+                received_packet = PlayerPacketInput::deserialize(buffer_);
+                UDPTask task = {received_packet, cliaddr};
+                std::cout << " seq_num=" << static_cast<int>(received_packet.seq_num) << std::endl;
+                if(!worker.assign_task(task)){
+                    std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+                }
+                else{
+                    std::cout<<"packet queued"<<std::endl;
+                };
+                lag =  TICK_RATE_BASE;
             }
-            else{
-                std::cout<<"packet queued"<<std::endl;
-            };
+            
         }
         else{
             std::cerr<<"there was an unknown error";

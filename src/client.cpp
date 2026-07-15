@@ -19,8 +19,8 @@ using namespace std::chrono;
 #define MAXLINE  1024
 std::atomic<bool> keep_running{true};
 const int TICKS_PER_SECOND = 30;
-const milliseconds TICK_RATE_DURATION(1000 / TICKS_PER_SECOND);
-const milliseconds TICK_RATE_BASE(0);
+const microseconds TICK_RATE_DURATION(16666);
+const microseconds TICK_RATE_BASE(0);
 void signal_handler(int signum) {
     if (signum == SIGINT) {
         keep_running.store(false); 
@@ -65,18 +65,18 @@ void signal_handler(int signum) {
         bool first_render = true;
         std::vector<uint8_t> buffer_(65535);
         auto previousTime = steady_clock::now();
-        milliseconds lag(0);
+        microseconds lag(0);
 
         while(keep_running.load()){
             auto currentTime = steady_clock::now();
-            auto elapsedTime = duration_cast<milliseconds>(currentTime - previousTime);
+            auto elapsedTime = duration_cast<microseconds>(currentTime - previousTime);
             previousTime = currentTime;
             lag += elapsedTime;
 
-            bool render = player->processInput();
 
-            if(lag >= TICK_RATE_DURATION){
-            std::cout << "Current lag: " << lag.count() << " ms" << std::endl;
+            // while(lag >= TICK_RATE_DURATION){
+                // std::cout << "Current lag: " << lag.count() << " ms" << std::endl;
+                bool render = player->processInput();
                 
                 if(render || first_render){
                     PlayerPacketInput PPI = player->formPacket();
@@ -85,8 +85,8 @@ void signal_handler(int signum) {
                     sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
                     first_render = false;    
                 }
-                lag -= TICK_RATE_DURATION;
-            }
+                // lag -= TICK_RATE_DURATION;
+            // }
         
             ssize_t bytes_received = recvfrom(
                 sockfd, 
