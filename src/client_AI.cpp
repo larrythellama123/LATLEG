@@ -1,7 +1,7 @@
 // Client side implementation of UDP client-server model
 
 #include <bits/stdc++.h>
-// #include <fcntl.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -19,9 +19,7 @@ using namespace std::chrono;
 #define PORT     8080
 #define MAXLINE  1024
 std::atomic<bool> keep_running{true};
-const int TICKS_PER_SECOND = 30;
-const milliseconds TICK_RATE_DURATION(1000 / TICKS_PER_SECOND);
-const milliseconds TICK_RATE_BASE(0);
+const int TICKS_PER_SECOND = 5;
 
 
 void signal_handler(int signum) {
@@ -62,15 +60,13 @@ void signal_handler(int signum) {
             perror("socket creation failed");
             exit(EXIT_FAILURE);
         }
-        struct timeval tv;
-        tv.tv_sec = 1;  //1 sec timeout
-        tv.tv_usec = 0;
-
-        // Set the receive timeout option
-        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
         
         //comment agn for non-blocking option
-        // fcntl(sockfd, F_SETFL, O_NONBLOCK);
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        fcntl(sockfd, F_SETFL, flags | O_NONBLOCK); 
+
+        const auto TICK = microseconds(1000000 / TICKS_PER_SECOND);
+        const int  MAX_CATCHUP = 5;
 
         memset(&servaddr, 0, sizeof(servaddr));
         memset(&cliaddr, 0, sizeof(cliaddr));
@@ -87,24 +83,27 @@ void signal_handler(int signum) {
         std::vector<uint8_t> buffer_(65535); 
 
         auto previousTime = steady_clock::now();
-        milliseconds lag(0);
+        microseconds lag(0);
 
         while(keep_running.load()){
             auto currentTime = steady_clock::now();
-            auto elapsedTime = duration_cast<milliseconds>(currentTime - previousTime);
+            auto elapsedTime = duration_cast<microseconds>(currentTime - previousTime);
             previousTime = currentTime;
             lag += elapsedTime;
 
-            //changes to the player location then send to server
-            if(player->AI_move()){
+            if (lag > TICK * MAX_CATCHUP) lag = TICK * MAX_CATCHUP;
+
+            int steps = 0;
+
+            while (lag >= TICK && steps < MAX_CATCHUP) {
+                player->AI_move();
                 PlayerPacketInput PPI = player->formPacket();
                 PPI.seq_num = player->get_seq_num();
-                std::vector<uint8_t> payload = PPI.serialize();
-                if(lag >= TICK_RATE_DURATION){
-                    sendto(sockfd, reinterpret_cast<const char*>(payload.data()),  payload.size(),  MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-                    lag = TICK_RATE_BASE;
-                }
-                first_render = false;
+                auto payload = PPI.serialize();
+                sendto(sockfd, payload.data(), payload.size(), 0,
+                    (const sockaddr*)&servaddr, sizeof(servaddr));
+                lag -= TICK;
+                ++steps;
             }
              
             ssize_t bytes_received = recvfrom(
@@ -140,6 +139,8 @@ void signal_handler(int signum) {
             else{
                 std::cerr<<"there was an error";
             }
+            //let the server get scheduled
+            std::this_thread::sleep_for(milliseconds(1));
             
         }
         close(sockfd);

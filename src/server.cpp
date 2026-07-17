@@ -150,7 +150,7 @@ class Worker{
             UDPTask task;
             while(running.load()){
                 if(queue->empty()){
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    // std::this_thread::sleep_for(std::chrono::microseconds(5));
                     continue;
                 }
                 queue->pop(task);
@@ -158,7 +158,7 @@ class Worker{
                 std::cout << "x=" << static_cast<int>(PPO.x)
                 << " y=" << static_cast<int>(PPO.y)<<std::endl;
                 std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
-                << " seq_num    " << static_cast<int>(PPO.seq_num)<<std::endl;
+                << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
                 if(PPO.legal){
@@ -231,7 +231,7 @@ int main() {
         &len
         );
         if(bytes_received > 0){
-            if (lag >= TICK_RATE_DURATION ){
+            // if (lag >= TICK_RATE_DURATION ){
                 received_packet = PlayerPacketInput::deserialize(buffer_);
                 UDPTask task = {received_packet, cliaddr};
                 std::cout << " seq_num=" << static_cast<int>(received_packet.seq_num) << std::endl;
@@ -241,8 +241,8 @@ int main() {
                 else{
                     std::cout<<"packet queued"<<std::endl;
                 };
-                lag =  TICK_RATE_BASE;
-            }
+                // lag =  TICK_RATE_BASE;
+            // }
             
         }
         else{

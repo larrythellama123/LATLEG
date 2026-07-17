@@ -186,7 +186,7 @@ public:
     bool processInput() {
         bool change  = false;
         // Store the previous position
-        
+        uint8_t tmp;
         // Read a single character from the terminal input buffer
         int ch = getch(); 
 
@@ -194,34 +194,55 @@ public:
         switch (ch) {
             case 'w':
             case 'W':
-            prev_x = x;
-            prev_y = y;
-            change  = true;
-            y =safe_sub(y,1);
-                break;
+            tmp = y; 
+            y = safe_sub(y,1);
+            if(!checkLegal(x,y)){
+                y = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = x;
+                prev_y = tmp;
+            }
+            break;
             case 's':
             case 'S':
-            prev_x = x;
-            prev_y = y;
-            change  = true;
-            y =safe_add(y,1);
+            tmp = y; 
+            y = safe_add(y,1);
+            if(!checkLegal(x,y)){
+                y = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = x;
+                prev_y = tmp;
+            }
                 break;
             case 'a':
             case 'A':
-            prev_x = x;
-            prev_y = y;
-            change  = true;
-            x =safe_sub(x,1);
+            tmp = x;
+            x = safe_sub(x,1);
+            if(!checkLegal(x,y)){
+                x = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = tmp;
+                prev_y = y;
+            }
                 break;
             case 'd':
             case 'D':
-            prev_x = x;
-            prev_y = y;
-            change  = true;
-            x =safe_add(x,1);
-                break;
-            default:
-                // No movement or unhandled key
+            tmp = x;
+            x = safe_add(x,1);
+            if(!checkLegal(x,y)){
+                x = tmp;
+            }
+            else{
+                change  = true;
+                prev_x = tmp;
+                prev_y = y  ;
+            }
                 break;
         }
         return change;
@@ -337,16 +358,14 @@ public:
     }
 
     bool checkLegal(uint8_t x, uint8_t y){
-        if(y != prev_y && x != prev_x){
-            return false;
-        }
-        if(y < 0 || y > 254 || abs(y - prev_y) > 1){
+        if(y < 0 || y > 254){
             return false;    
         }
-        if(x < 0 || x > 254 || abs(x - prev_x) > 1){
+        if(x < 0 || x > 254){
             return false;    
         }
         if(full_map[y*254 + x] == '*'){
+            
             return false;    
         } 
         return true;
