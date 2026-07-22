@@ -7,15 +7,22 @@
 #include <stdint.h>
 
 enum class PlayerState:uint8_t {
-    Alive,    
-    Dead,
+    IT_TRANSITION,
+    IT,    
+    NOT_IT,
+};
+enum class Color:uint8_t {
+    WHITE,
+    RED
 };
 
 struct EnemyInfo {
+    uint8_t player_id;
     uint8_t x;
     uint8_t y;
     uint8_t prev_x;
     uint8_t prev_y;
+    uint8_t color;
     char character;
 
     bool operator==(const EnemyInfo& other) const {
@@ -340,6 +347,7 @@ public:
         x = PP.x;
         y = PP.y;
         character = PP.character;
+        PS = PP.PS;
         return true;
     }
 
@@ -371,13 +379,13 @@ public:
         return true;
     }
 
-    PlayerState checkDead(const PlayerPacketOutput& PP){
+    PlayerState checkIT(const PlayerPacketOutput& PP){
         for(const auto& enemy_pos: PP.enemy_positions){
             if(enemy_pos.x == x && enemy_pos.y == y){
-               return PlayerState::Dead; 
+               return PlayerState::IT; 
             }
         }
-        return PlayerState::Alive;
+        return PlayerState::NOT_IT;
     }
 
     void init(uint8_t x_, uint8_t y_, char character_){
@@ -396,4 +404,5 @@ private:
     char  character = 'h';
     std::vector<char>full_map;
     uint8_t seq_num=0;
+    PlayerState PS = PlayerState::NOT_IT;
 };

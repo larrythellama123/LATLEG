@@ -38,6 +38,7 @@ struct UDPTask{
     PlayerPacketInput PP;
     sockaddr_in client_addr;
     uint8_t player_id;
+    uint8_t current_it;
 };
 
 
@@ -118,6 +119,7 @@ class Worker{
         std::atomic<bool> running = true;
         std::set<sockaddr_in, SockaddrLess> client_addresses;
         std::map<sockaddr_in, uint8_t, SockaddrLess> player_id_map;
+        uint8_t current_it = 0;
         uint8_t player_id = 0;
         int sockfd;
     public:
@@ -154,13 +156,17 @@ class Worker{
                     continue;
                 }
                 queue->pop(task);
-                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id);
-                std::cout << "x=" << static_cast<int>(PPO.x)
-                << " y=" << static_cast<int>(PPO.y)<<std::endl;
-                std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
-                << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
+                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id, task.current_it);
+                // std::cout << "x=" << static_cast<int>(PPO.x)
+                // << " y=" << static_cast<int>(PPO.y)<<std::endl;
+                // std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
+                // << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
+                // if(PPO.PS == PlayerState::IT_TRANSITION){
+                //     //start timer
+                //     auto
+                // }
                 if(PPO.legal){
                     PPO.active_player = false;
                     PPO.x = 0;
