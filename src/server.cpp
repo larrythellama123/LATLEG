@@ -121,6 +121,7 @@ class Worker{
         std::map<sockaddr_in, uint8_t, SockaddrLess> player_id_map;
         uint8_t current_it = 0;
         uint8_t player_id = 0;
+        bool run_enemy_touch = true;
         int sockfd;
     public:
         Worker(int sock_fd_) : sockfd(sock_fd_),thread(&Worker<size>::worker_function, this){}
@@ -150,23 +151,32 @@ class Worker{
 
         void worker_function(){
             UDPTask task;
+            auto previousTime = steady_clock::now();
             while(running.load()){
                 if(queue->empty()){
                     // std::this_thread::sleep_for(std::chrono::microseconds(5));
                     continue;
                 }
                 queue->pop(task);
-                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id, task.current_it);
-                // std::cout << "x=" << static_cast<int>(PPO.x)
-                // << " y=" << static_cast<int>(PPO.y)<<std::endl;
-                // std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
-                // << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
+                if(run_enemy_touch){
+                    previousTime = steady_clock::now();
+                }
+                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id, task.current_it, run_enemy_touch);
+                if(!run_enemy_touch){
+                    auto currentTime = steady_clock::now();
+                    auto elapsedTime = duration_cast<seconds>(currentTime - previousTime);
+                    if(elapsedTime > seconds(2)){
+                        run_enemy_touch = !run_enemy_touch;
+                    }
+                }
+                
+                std::cout << "x=" << static_cast<int>(PPO.x)
+                << " y=" << static_cast<int>(PPO.y)<<std::endl;
+                std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
+                << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
+               
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
-                // if(PPO.PS == PlayerState::IT_TRANSITION){
-                //     //start timer
-                //     auto
-                // }
                 if(PPO.legal){
                     PPO.active_player = false;
                     PPO.x = 0;

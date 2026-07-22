@@ -87,9 +87,9 @@ void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map
     // }
 
 
-    void updatePositionAndBucket(const PlayerPacketInput& PP_input, uint8_t player_id){
-        std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
-        printEnemyCharacters(enemy_map);
+    void updatePositionAndBucket(const PlayerPacketInput& PP_input, uint8_t player_id, uint8_t current_it){
+        // std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
+        // printEnemyCharacters(enemy_map);
         // std::cout<<" player id  "<< static_cast<int>(player_id)  << " char= "<<PP_input.character << std::endl;
         if(player_id == current_it){
             enemy_map[player_id] = {player_id, PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y, COLOR::RED, PP_input.character};
@@ -130,15 +130,13 @@ void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map
     // }
     
     
-    std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input, PlayerPacketOutput& PP_output, uint8_t& current_it ){
+    std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input, PlayerPacketOutput& PP_output, uint8_t& current_it, bool& run_enemy_touch){
         std::pair<int,int> p = {PP_input.x/10,PP_input.y/10};
         std::vector<EnemyInfo> enemy_positions;
-        for(const auto& [player_id, player_info]  : enemy_map){
-            // std::cout << "x=" << static_cast<int>(player_info.x)
-            // << " y=" << static_cast<int>(player_info.y)
-            // << " char=" << player_info.character <<" id= "<<player_id <<  std::endl;
-            if(player_info.x == x && player_info.y == y && player_info.player_id == current_it){
-                PP_output.PS = PlayerState::IT_TRANSITION;
+        for(auto& [player_id, player_info]  : enemy_map){
+            
+            if(run_enemy_touch && PP_output.player_id != current_it && player_info.x == PP_output.x && player_info.y == PP_output.y && player_info.player_id == current_it){
+                run_enemy_touch = false;
                 player_info.color = COLOR::WHITE;
                 current_it = PP_output.player_id;
             }
@@ -160,16 +158,8 @@ void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map
         return true;
     }
 
-    PlayerState checkIT(const PlayerPacketOutput& PP){
-        for(const auto& enemy_pos: PP.enemy_positions){
-            if(enemy_pos.x == x && enemy_pos.y == y){
-               return PlayerState::IT; 
-            }
-        }
-        return PlayerState::NOT_IT;
-    }
     
-    PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input, uint8_t player_id, uint8_t& current_it){
+    PlayerPacketOutput sendUpdate(const PlayerPacketInput& PP_input, uint8_t player_id, uint8_t& current_it, bool& run_enemy_touch){
         PlayerPacketOutput PP_output;
         PP_output.seq_num = PP_input.seq_num;
         PP_output.x = PP_input.x;
@@ -182,12 +172,13 @@ void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map
             PP_output.x = PP_output.prev_x;
             PP_output.y = PP_output.prev_y;
             PP_output.legal = false;
-            PP_output.enemy_positions = checkEnemy(PP_input,PP_output,current_it);
+            PP_output.enemy_positions = checkEnemy(PP_input,PP_output,current_it, run_enemy_touch);
             std::cout<<"DEBUG"<<std::endl;
             return PP_output;
         }
-        PP_output.enemy_positions = checkEnemy(PP_input);
         updatePositionAndBucket( PP_input, player_id, current_it);
+        PP_output.enemy_positions = checkEnemy(PP_input, PP_output, current_it, run_enemy_touch);
+
         return PP_output;
     }
 

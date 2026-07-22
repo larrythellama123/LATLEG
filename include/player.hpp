@@ -6,12 +6,13 @@
 #include <random> 
 #include <stdint.h>
 
-enum class PlayerState:uint8_t {
-    IT_TRANSITION,
-    IT,    
-    NOT_IT,
-};
-enum class Color:uint8_t {
+// enum class PlayerState:uint8_t {
+//     IT_TRANSITION,
+//     IT,    
+//     NOT_IT,
+// };
+
+enum class COLOR:uint8_t {
     WHITE,
     RED
 };
@@ -22,7 +23,7 @@ struct EnemyInfo {
     uint8_t y;
     uint8_t prev_x;
     uint8_t prev_y;
-    uint8_t color;
+    COLOR color;
     char character;
 
     bool operator==(const EnemyInfo& other) const {
@@ -99,7 +100,7 @@ public:
     uint8_t prev_y;
     uint8_t seq_num;
     char character;
-    PlayerState PS;
+    // PlayerState PS;
 
     std::vector<uint8_t> serialize(){
         std::vector<uint8_t> buffer;
@@ -111,13 +112,14 @@ public:
         buffer.push_back(prev_y);
         buffer.push_back(seq_num);
         buffer.push_back(static_cast<uint8_t>(character));
-        buffer.push_back(static_cast<uint8_t>(PS));
+        // buffer.push_back(static_cast<uint8_t>(PS));
         uint8_t enemy_count = static_cast<uint8_t>(enemy_positions.size());
         buffer.push_back(enemy_count);
         for (const auto& enemy : enemy_positions) {
             buffer.push_back(static_cast<uint8_t>(enemy.character));
             buffer.push_back(enemy.x);
             buffer.push_back(enemy.y);
+            buffer.push_back(static_cast<uint8_t>(enemy.color));
             if(!active_player){
                 std::cout<<static_cast<int>(enemy.y) <<" enemy serilaization "<< static_cast<int>(enemy.x)<<std::endl;
             }
@@ -139,13 +141,14 @@ public:
         PP.prev_y = buffer[offset++];
         PP.seq_num = buffer[offset++];
         PP.character = static_cast<char>(buffer[offset++]);
-        PP.PS = static_cast<PlayerState>(buffer[offset++]);
+        // PP.PS = static_cast<PlayerState>(buffer[offset++]);
         uint8_t enemy_count = buffer[offset++];
         for (uint8_t i = 0; i < enemy_count; ++i) {
             EnemyInfo enemy;
             enemy.character = static_cast<char>(buffer[offset++]);
             enemy.x  = buffer[offset++];
             enemy.y  = buffer[offset++];
+            enemy.color =  static_cast<COLOR>(buffer[offset++]);
             enemy.prev_x  = buffer[offset++];
             enemy.prev_y  = buffer[offset++];
             PP.enemy_positions.push_back(enemy);
@@ -347,7 +350,7 @@ public:
         x = PP.x;
         y = PP.y;
         character = PP.character;
-        PS = PP.PS;
+        // PS = PP.PS;
         return true;
     }
 
@@ -379,14 +382,6 @@ public:
         return true;
     }
 
-    PlayerState checkIT(const PlayerPacketOutput& PP){
-        for(const auto& enemy_pos: PP.enemy_positions){
-            if(enemy_pos.x == x && enemy_pos.y == y){
-               return PlayerState::IT; 
-            }
-        }
-        return PlayerState::NOT_IT;
-    }
 
     void init(uint8_t x_, uint8_t y_, char character_){
         x = x_;
@@ -404,5 +399,4 @@ private:
     char  character = 'h';
     std::vector<char>full_map;
     uint8_t seq_num=0;
-    PlayerState PS = PlayerState::NOT_IT;
 };

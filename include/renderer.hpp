@@ -47,11 +47,11 @@ class Renderer{
                 }
             }
 
-            if(PP.active_player){
-                move(PP.y, PP.x);
-                addch(PP.character);
-                refresh();
-            }
+            // if(PP.active_player){
+            //     move(PP.y, PP.x);
+            //     addch(PP.character);
+            //     refresh();
+            // }
             render_only_enemies(PP);
         }
         
