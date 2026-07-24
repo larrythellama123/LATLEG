@@ -33,6 +33,8 @@ void signal_handler(int signum) {
         
        
         initscr();
+        start_color();
+        init_pair(1, COLOR_RED, COLOR_BLACK);
         cbreak();
         noecho();
         keypad(stdscr, TRUE);

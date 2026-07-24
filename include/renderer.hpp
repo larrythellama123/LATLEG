@@ -68,7 +68,13 @@ class Renderer{
 
             for(const auto& enemy_pos: PP.enemy_positions){
                 move(enemy_pos.y, enemy_pos.x);
-                addch(enemy_pos.character);    
+                if(enemy_pos.color == COLOR::RED){
+                    attron(COLOR_PAIR(1));
+                    addch(enemy_pos.character);    
+                    attroff(COLOR_PAIR(1));
+                }else{
+                    addch(enemy_pos.character);    
+                }
             } 
 
             refresh();

@@ -38,7 +38,6 @@ struct UDPTask{
     PlayerPacketInput PP;
     sockaddr_in client_addr;
     uint8_t player_id;
-    uint8_t current_it;
 };
 
 
@@ -161,7 +160,7 @@ class Worker{
                 if(run_enemy_touch){
                     previousTime = steady_clock::now();
                 }
-                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id, task.current_it, run_enemy_touch);
+                PlayerPacketOutput PPO = map->sendUpdate(task.PP, task.player_id, current_it, run_enemy_touch);
                 if(!run_enemy_touch){
                     auto currentTime = steady_clock::now();
                     auto elapsedTime = duration_cast<seconds>(currentTime - previousTime);
