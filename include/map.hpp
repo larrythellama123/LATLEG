@@ -36,108 +36,37 @@ class Map{
             }       
         }     
     }
-    void printBucketMap(const auto& bucket_map) {
-    if (bucket_map.empty()) {
-        std::cout << "[Bucket Map] Empty\n";
-        return;
-    }
-
-    std::cout << "=== BUCKET MAP CONTENTS ===\n";
-    // Loop through each bucket entry (pair of coordinates -> set of enemies)
-    for (const auto& [bucket_coords, enemy_set] : bucket_map) {
-        std::cout << "Bucket [" << bucket_coords.first << ", " << bucket_coords.second << "]:\n";
-        
-        if (enemy_set.empty()) {
-            std::cout << "  (empty bucket)\n";
-            continue;
-        }
-
-        // Loop through and print each enemy in this specific bucket
-        for (const auto& enemy : enemy_set) {
-            std::cout << "  -> Enemy '" << enemy.character << "' "
-                      << "Current: (" << static_cast<int>(enemy.x) << ", " << static_cast<int>(enemy.y) << ") "
-                      << "Prev: (" << static_cast<int>(enemy.prev_x) << ", " << static_cast<int>(enemy.prev_y) << ")\n";
-        }
-    }
-    std::cout << "===========================\n";
-}
-void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map) {
-    // If you are using C++17 or newer (Structured Bindings)
-    for (const auto& [player_id, info] : enemy_map) {
-        std::cout << "Player ID: " << static_cast<int>(player_id) 
-                  << " | Character: " << info.character << "\n";
-    }
-}
-
-    // void updatePositionAndBucket(const PlayerPacketInput& PP_input){
-    //     full_map[PP_input.y * 254 + PP_input.x] = PP_input.character;
-    //     full_map[PP_input.prev_y * 254 + PP_input.prev_x] = ' ';
-
-    //     std::pair<int,int> p1 = {PP_input.x/10,PP_input.y/10};
-    //     std::pair<int,int> p2 = {PP_input.prev_x/10,PP_input.prev_y/10};
-
-
-    //     EnemyInfo tmp = {PP_input.prev_x,PP_input.prev_y,0,0,PP_input.character};
-    //     bucket_map[p2].erase(tmp);
-    //     std::cout<<"  p1f "<<p1.first<<" p1s "<<p1.second<<std::endl;
-    //     EnemyInfo tmp2 = {PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y,PP_input.character};
-    //     bucket_map[p1].insert(tmp2);
-    //     // printBucketMap(bucket_map);
-        
-    // }
+    
 
 
     void updatePositionAndBucket(const PlayerPacketInput& PP_input, uint8_t player_id, uint8_t current_it){
-        // std::cout<<" player id  "<< static_cast<int>(player_id)  << " current_it  "<< static_cast<int>(current_it) << std::endl;
         if(player_id == current_it){
             enemy_map[player_id] = {player_id, PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y, COLOR::RED, PP_input.character};
         }
         else{
             enemy_map[player_id] = {player_id, PP_input.x,PP_input.y,PP_input.prev_x, PP_input.prev_y, COLOR::WHITE, PP_input.character};
         }
-        // std::cout<<" round 2 player id  "<< static_cast<int>(player_id) << " char= "<<PP_input.character << std::endl;
-    
     }
 
-
-    
-    
-    // std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input){
-    //     std::pair<int,int> p = {PP_input.x/10,PP_input.y/10};
-    //     std::vector<EnemyInfo> enemy_positions;
-    //     for(const auto& dir : directions){
-    //         int tmp1 = p.first + dir[0];
-    //         int tmp2 = p.second + dir[1];   
-
-    //         if(tmp1 < 0 || tmp1 > 25 || tmp2 < 0 || tmp2 > 25){
-    //             continue;
-    //         }
-    //         std::cout << " tmp 1 " << static_cast<int>(PP_input.x) <<" tmp2  "<< tmp2<<std::endl;
-    //         std::unordered_set<EnemyInfo> set = bucket_map[{tmp1,tmp2}];
-    //         for (const auto& element : set) {
-    //             // if(element.x  ==  PP_input.x && element.y == PP_input.y){
-    //             //     continue;
-    //             // }
-    //             std::cout << "x=" << static_cast<int>(element.x)
-    //             << " y=" << static_cast<int>(element.y)
-    //             << " char=" << element.character << std::endl;
-    //             enemy_positions.emplace_back(element);
-    //         }
-    //     }
-    //     return enemy_positions;
-    // }
-    
     
     std::vector<EnemyInfo> checkEnemy(const PlayerPacketInput& PP_input, PlayerPacketOutput& PP_output,  uint8_t& current_it, bool& run_enemy_touch){
         std::vector<EnemyInfo> enemy_positions;
         
         for(auto& [player_id, player_info]  : enemy_map){
-            // if(PP_output.player_id != current_it && player_info.x == PP_output.x && player_info.y == PP_output.y){
-            // }
-            if(run_enemy_touch && PP_output.player_id != current_it && player_info.x == PP_output.x && player_info.y == PP_output.y && player_id == current_it){
+            if(PP_output.player_id == player_id){
+                enemy_positions.emplace_back(player_info);
+                continue;
+            }
+            if(run_enemy_touch  && player_id == current_it && player_info.x == PP_output.x && player_info.y == PP_output.y ){
                 run_enemy_touch = false;
                 player_info.color = COLOR::WHITE;
                 current_it = PP_output.player_id;
+            }
+
+            else if(run_enemy_touch  && PP_output.player_id == current_it && player_info.x == PP_output.x && player_info.y == PP_output.y){
+                run_enemy_touch = false;
+                player_info.color = COLOR::RED;
+                current_it = player_id;
             }
             enemy_positions.emplace_back(player_info);
         }
@@ -179,9 +108,6 @@ void printEnemyCharacters(const std::unordered_map<uint8_t,EnemyInfo>& enemy_map
         updatePositionAndBucket( PP_input, player_id, current_it);
         PP_output.enemy_positions = checkEnemy(PP_input, PP_output, current_it, run_enemy_touch);
         updatePositionAndBucket( PP_input, player_id, current_it);
-
-
-
         return PP_output;
     }
 
