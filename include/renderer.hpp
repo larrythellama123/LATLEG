@@ -9,7 +9,9 @@ class Renderer{
         Renderer(){
             std::ifstream file("./text_map.txt", std::ios::binary);
             if(!file){
-                endwin(); 
+                #ifndef TESTING
+                endwin();
+                #endif 
                 std::cerr << "file not found\n";
                 std::exit(1);
             }
@@ -27,7 +29,8 @@ class Renderer{
                     chunk[i*100+j] = full_map[i*254+j];
                 }       
             }
-
+            
+            #ifndef TESTING
             for (int i = 0; i < 254; i++){
                 for (int j = 0; j < 254; j++){
                     move(j, i);
@@ -35,11 +38,12 @@ class Renderer{
                 }
             }
             refresh();
+            #endif
 
         }
 
         void render(const PlayerPacketOutput& PP){
-
+            #ifndef TESTING
             for (int i = std::max(PP.x - 10, 0); i < std::min(PP.x+10, 254); i++){
                 for (int j = std::max(PP.y - 10, 0); j < std::min(PP.y+10, 254); j++){
                     move(j, i);
@@ -53,12 +57,13 @@ class Renderer{
             //     refresh();
             // }
             render_only_enemies(PP);
+            #endif
         }
         
         void render_only_enemies(const PlayerPacketOutput& PP){
             //fix later: renders 10 by 10 square around the player starting pos, but if enemies are over tha map,
             //their prev positions remain
-            
+            #ifndef TESTING
             for (int i = std::max(PP.x - 10, 0); i < std::min(PP.x+10, 254); i++){
                 for (int j = std::max(PP.y - 10, 0); j < std::min(PP.y+10, 254); j++){
                     move(j, i);
@@ -78,10 +83,10 @@ class Renderer{
             } 
 
             refresh();
+            #endif
         }
         
 private:
-    WINDOW* pad = newpad(254, 254);
     std::vector<char>full_map;
     std::vector<char>chunk;
 

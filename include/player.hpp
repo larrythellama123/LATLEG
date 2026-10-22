@@ -2,7 +2,11 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+
+#ifndef TESTING
 #include <ncurses.h>
+#endif
+
 #include <random> 
 #include <stdint.h>
 
@@ -161,6 +165,7 @@ class Player {
 public:
     // Default constructor zeroes out the array automatically
     Player(){
+        #ifndef TESTING
         initscr();             
         noecho();              
         nodelay(stdscr, TRUE); 
@@ -177,11 +182,14 @@ public:
             while (std::getline(file, line)) {
                 full_map.insert(full_map.end(), line.begin(), line.end());
             }
+        #endif
 
     }
 
     ~Player(){
-        endwin(); 
+        #ifndef TESTING
+        endwin();
+        #endif 
     }
 
     uint8_t get_seq_num(){
@@ -198,6 +206,8 @@ public:
         // Store the previous position
         uint8_t tmp;
         // Read a single character from the terminal input buffer
+        #ifndef TESTING
+
         int ch = getch(); 
 
         // Process the key press
@@ -255,6 +265,7 @@ public:
             }
                 break;
         }
+        #endif
         return change;
     }
     

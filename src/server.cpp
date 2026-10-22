@@ -15,6 +15,19 @@
 #include <thread>
 #include <chrono>
 
+#ifndef NDEBUG
+    #define LOG_DEBUG(msg) std::cout << "[DEBUG] (" << __FILE__ << ":" << __LINE__ << ") " << msg << std::endl
+#else
+    #define LOG_DEBUG(msg) do {} while (0) //compiles to nothing
+#endif
+
+#ifndef NERROR
+    #define LOG_ERROR(msg) std::cerr << "[ERROR] (" << __FILE__ << ":" << __LINE__ << ") " << msg << std::endl
+#else
+    #define LOG_ERROR(msg) do {} while (0) //compiles to nothing
+#endif
+
+
 using namespace std::chrono;
 const int TICKS_PER_SECOND = 3;
 const microseconds TICK_RATE_DURATION(16666);
@@ -169,10 +182,10 @@ class Worker{
                     }
                 }
                 
-                std::cout << "x=" << static_cast<int>(PPO.x)
+                LOG_DEBUG("x=" << static_cast<int>(PPO.x)
                 << " y=" << static_cast<int>(PPO.y)<<std::endl;
                 std::cout << "prevx=" << static_cast<int>(PPO.prev_x)
-                << " prevy=    " << static_cast<int>(PPO.prev_y)<<std::endl;
+                << " prevy= " << static_cast<int>(PPO.prev_y));
                
                 std::vector<uint8_t> payload = PPO.serialize();
                 sendto(sockfd, reinterpret_cast<const char *> (payload.data()), payload.size(), MSG_CONFIRM, (const struct sockaddr *)&task.client_addr, sizeof(task.client_addr));
@@ -251,17 +264,17 @@ int main() {
                 UDPTask task = {received_packet, cliaddr};
                 std::cout << " seq_num=" << static_cast<int>(received_packet.seq_num) << std::endl;
                 if(!worker.assign_task(task)){
-                    std::cerr<<"packet is dropped "<< sizeof(received_packet)<<std::endl;
+                    LOG_ERROR("packet is dropped "<< sizeof(received_packet));
                 }
                 else{
-                    std::cout<<"packet queued"<<std::endl;
+                    lOG_DEBUG("packet queued");
                 };
                 // lag =  TICK_RATE_BASE;
             // }
             
         }
         else{
-            std::cerr<<"there was an unknown error";
+            LOG_ERROR("there was an unknown error");
         }
         
     }
