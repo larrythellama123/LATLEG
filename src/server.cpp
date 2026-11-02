@@ -125,7 +125,7 @@ class SPSCQueue{
 template<size_t size> 
 class Worker{
     private:
-        std::unique_ptr<SPSCQueue<UDPTask,size>> queue = std::make_unique<SPSCQueue<UDPTask,size>>();
+        SPSCQueue<UDPTask,size> queue;
         std::unique_ptr<Map> map = std::make_unique<Map>();
         std::thread thread;
         std::atomic<bool> running = true;
@@ -153,8 +153,8 @@ class Worker{
                 client_addresses.insert(item.client_addr);
             }
             item.player_id = player_id_map[item.client_addr];
-            if(!queue->full()){
-                queue->push(item);
+            if(!queue.full()){
+                queue.push(item);
                 return true;    
             }
             return false;
@@ -165,11 +165,11 @@ class Worker{
             UDPTask task;
             auto previousTime = steady_clock::now();
             while(running.load()){
-                if(queue->empty()){
-                    // std::this_thread::sleep_for(std::chrono::microseconds(5));
+                if(queue.empty()){
+                    std::this_thread::sleep_for(std::chrono::microseconds(5));
                     continue;
                 }
-                queue->pop(task);
+                queue.pop(task);
                 if(run_enemy_touch){
                     previousTime = steady_clock::now();
                 }
@@ -267,7 +267,7 @@ int main() {
                     LOG_ERROR("packet is dropped "<< sizeof(received_packet));
                 }
                 else{
-                    lOG_DEBUG("packet queued");
+                    LOG_DEBUG("packet queued");
                 };
                 // lag =  TICK_RATE_BASE;
             // }
